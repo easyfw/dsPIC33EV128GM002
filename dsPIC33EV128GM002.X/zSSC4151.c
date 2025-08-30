@@ -6,7 +6,7 @@
  */
 #include <stdbool.h>
 #include <stdint.h> 
-#include "zSSC4151.h"
+#include "..\h\zSSC4151.h"
 
 extern void dbg_putc (char c);
 extern void dbg_put_hex_byte (uint8_t val);

@@ -9,7 +9,7 @@
 #include <stdint.h> 
 
 #include <p33EV128GM002.h>
-#include "common.h"
+#include "..\h\common.h"
 
 //
 extern volatile uint32_t t1_tick, t2_tick;

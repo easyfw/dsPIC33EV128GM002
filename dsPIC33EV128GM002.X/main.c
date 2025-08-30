@@ -7,10 +7,10 @@
 #include <stdio.h>
 
 #include <p33EV128GM002.h>
-#include "main.h"
-#include "common.h"
-#include "zSSC4151.h"
-#include "sHT4x.h"
+#include "..\h\main.h"
+#include "..\h\common.h"
+#include "..\h\zSSC4151.h"
+#include "..\h\sHT4x.h"
 
 //
 int main (void)

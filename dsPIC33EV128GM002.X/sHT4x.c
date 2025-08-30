@@ -6,7 +6,7 @@
  */
 #include <stdbool.h>
 #include <stdint.h> 
-#include "sHT4x.h"
+#include "..\h\sHT4x.h"
 
 // I2C
 extern void I2C1_Init (void);
