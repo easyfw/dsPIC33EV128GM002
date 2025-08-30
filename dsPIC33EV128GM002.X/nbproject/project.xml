@@ -3,14 +3,13 @@
     <type>com.microchip.mplab.nbide.embedded.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>dsPIC33EV128GM002</name>
-            <creation-uuid>4b4f4c57-82fc-47f3-80b8-ebbaccdd5eac</creation-uuid>
+            <name>dsPIC33EV128002</name>
+            <creation-uuid>0f9aabfc-254f-4132-b7ad-25ddc96246b3</creation-uuid>
             <make-project-type>0</make-project-type>
             <sourceEncoding>EUC-KR</sourceEncoding>
             <make-dep-projects/>
             <sourceRootList>
-                <sourceRootElem>../h</sourceRootElem>
-                <sourceRootElem>C:/Program Files/Microchip/MPLABX/v6.05/packs/Microchip/dsPIC33EV-GM-00X-10X_DFP/1.3.79/xc16/support/dsPIC33E/h</sourceRootElem>
+                <sourceRootElem>../../h</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>
