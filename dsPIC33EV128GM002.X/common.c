@@ -40,8 +40,8 @@ void oscConfig (void)
 //
 void Init_Hw ()
 {
-    RCONbits.SWDTEN = 0; // ?????????? ????? ???? ??????
-
+    RCONbits.SWDTEN = 0;    // 
+       
     t2_tick = 0;
     t1_tick = 0;
   //
@@ -102,62 +102,68 @@ void REFCLKO_Init (void)
     REFOCONbits.ROON = 1; // Enable the Reference Clock Output
 }
 
-//
-void SENT1_TX_Init (void)
+/**
+ * UART1 ??? ????? ??
+ */
+void UART1_Init (void)
 {
-    RPOR4bits.RP43R = 0b0110101;
-    TRISBbits.TRISB11 = 0; // RB14 ???? ?????? ??????? ????
+    TRISBbits.TRISB11 = 0;
+    RPOR4bits.RP43R = 1; // U1TX to RB11 (RP43)
 
-    // Set up SENT interrupts
-    IPC45bits.SENT1IP = 5; // SENT TX/RX completion interrupt priority
-    IFS11bits.SENT1IF = 0; // Clear SENT TX/RX completion interrup flag
-    IEC11bits.SENT1IE = 1; // Enable SENT TX/RX completion interrupt
+    // --- UART Mode ?? ---
+    U1MODEbits.STSEL = 0; // 1-Stop bit
+    U1MODEbits.PDSEL = 0; // No Parity, 8-Data bits
+    U1MODEbits.ABAUD = 0; // Auto-Baud Disabled
+    U1MODEbits.BRGH = 0; // Standard-Speed mode
 
-    IPC45bits.SENT1EIP = 6; // SENT ERROR interrupt priority
-    IFS11bits.SENT1EIF = 0; // Clear SENT ERROR interrup flag
-    IEC11bits.SENT1EIE = 1; // Enable SENT ERROR interrupt
+    // --- UART Status and Control ?? ---
+    U1STAbits.URXISEL = 0; // Interrupt after one RX character is received
 
-    // Initialize SENT registers for transmit mode (no frame time specified due to no pause)
-    SENT1CON2 = (int) (tickTime * peripheralClk) - 1;
-    SENT1CON1bits.TXM = 1; // sync handshaking mode
-    SENT1CON1bits.CRCEN = 1; // CRC enable, 0=off, 1=on
-    SENT1CON1bits.PPP = 0; // Pause, 0=off, 1=on
-    SENT1CON1bits.NIBCNT = 6; // nibbles of data
-    SENT1CON1bits.SNTEN = 1; // enable SENT module
-    SENT1DATH = 0;
-    SENT1DATL = 0; // initialize the SENT data registers
+    U1BRG = BAUD38400;
+
+    // --- UART ?? ??? ---
+    U1MODEbits.UARTEN = 1; // Enable UART
+    U1STAbits.UTXEN = 1; // Enable UART TX
+
+    delay_10ms (1);
 }
 
 //
-
-void ADC_Init (void)
+void SENT1_TX_Init (void)
 {
-  // 1. Configure AN0 pin as analog input
-  TRISAbits.TRISA0 = 1; // RA0 (AN0) pin as input
-  ANSELAbits.ANSA0 = 1;
+    // 1. RP43 핀(RB11)을 출력으로 설정
+    TRISBbits.TRISB11 = 0;
 
-  // 2. Configure AD1CON1 register
-  AD1CON1bits.ADON = 0; // Turn ADC OFF before configuration
-  AD1CON1bits.ADSIDL = 0; // Continue module operation in Idle mode
-  AD1CON1bits.FORM = 0b00; // Data Output Format: Integer
-  AD1CON1bits.SSRC = 0b111; // Conversion Trigger: Internal counter ends sampling and starts conversion (auto-convert)
-  AD1CON1bits.ASAM = 0; // Sampling begins when SAMP bit is manually set
+    // 2. PPS 레지스터 잠금 해제
+    __builtin_write_OSCCONL(OSCCON & 0xBF);
 
-  // 3. Configure AD1CON2 register
-  AD1CON2bits.VCFG = 0b000; // Voltage Reference: AVdd and AVss
-  AD1CON2bits.CSCNA = 0; // Do not scan inputs
+    // 3. SENT1 출력을 RP42 핀으로 매핑 (데이터시트 TABLE 11-3 & TABLE 4-14 기반)
+    //    SENT1 Function Code: 0b111001
+    RPOR4bits.RP43R = 0b111001; 
 
-  // 4. Configure AD1CON3 register
-  AD1CON3bits.ADRC = 0; // Clock Source: System Clock
-  AD1CON3bits.SAMC = 16; // Auto Sample Time: 16 TAD
-  AD1CON3bits.ADCS = 3; // ADC Conversion Clock: TAD = 4 * Tcy (Tcy = 1/FCY)
+    // 4. PPS 레지스터 재 잠금
+    __builtin_write_OSCCONL(OSCCON | 0x40);
+    
+    // --- SENT 모듈 설정 (비활성화 상태에서 진행) ---
+    SENT1CON1bits.SNTEN = 0;
 
-  // 5. Configure AD1CHS0 register
-  AD1CHS0bits.CH0SA = 0; // Select AN0 for CH0 positive input
+        // Initialize SENT registers for transmit mode (no frame time specified due to no pause)
+    SENT1CON2 = (int) (tickTime * peripheralClk) - 1;
+    SENT1CON1bits.RCVEN = 0; // sync handshaking mode
+    SENT1CON1bits.TXM = 1; // sync handshaking mode
+    SENT1CON1bits.CRCEN = 1; // CRC enable, 0=off, 1=on
+    SENT1CON1bits.TXPOL = 0; 
+    SENT1CON1bits.PPP = 0; // Pause, 0=off, 1=on
+    SENT1CON1bits.NIBCNT = 6; // nibbles of data
+    SENT1CON1bits.SNTEN = 1; // enable SENT module
+    
+    // 인터럽트는 사용하지 않으므로 비활성화
+    IEC11bits.SENT1IE = 0;
+    IFS11bits.SENT1IF = 0;
 
-  // 6. Turn ADC ON
-  AD1CON1bits.ADON = 1;
-  delay_us (20); // Wait for ADC stabilization
+    // --- 모든 설정 완료 후 SENT 모듈 활성화 ---
+    SENT1CON1bits.SNTEN = 1;
+    
 }
 
 //
@@ -186,33 +192,6 @@ void delay_us (unsigned int us)
     T3CONbits.TON = 1; // ??? ??
 
     while (!t3_done); // ??? ??? ??
-}
-
-
-/**
- * UART1 ??? ????? ??
- */
-void UART1_Init (void)
-{
-    TRISBbits.TRISB11 = 0;
-    RPOR4bits.RP43R = 1; // U1TX to RB11 (RP43)
-
-    // --- UART Mode ?? ---
-    U1MODEbits.STSEL = 0; // 1-Stop bit
-    U1MODEbits.PDSEL = 0; // No Parity, 8-Data bits
-    U1MODEbits.ABAUD = 0; // Auto-Baud Disabled
-    U1MODEbits.BRGH = 0; // Standard-Speed mode
-
-    // --- UART Status and Control ?? ---
-    U1STAbits.URXISEL = 0; // Interrupt after one RX character is received
-
-    U1BRG = BAUD38400;
-
-    // --- UART ?? ??? ---
-    U1MODEbits.UARTEN = 1; // Enable UART
-    U1STAbits.UTXEN = 1; // Enable UART TX
-
-    delay_10ms (1);
 }
 
 //
@@ -333,7 +312,6 @@ int I2C1_SendByte (unsigned char data)
 }
 
 //
-
 uint8_t I2C1_ReadByte (bool ack)
 {
     I2C1CON1bits.RCEN = 1;
@@ -428,7 +406,6 @@ void I2C1_Init (void)
 }
 
 //
-
 void I2C1_WaitForIdle (void)
 {
     while (I2C1STATbits.TRSTAT || (I2C1CONL & 0x1F));
@@ -464,7 +441,6 @@ bool I2C1_Restart (void)
 
 //
 //
-
 bool I2C1_Write (uint8_t data)
 {
     I2C1_WaitForIdle ();
@@ -514,4 +490,30 @@ void I2C1_Nack (void)
     I2C1CONLbits.ACKEN = 1;
 
     while (I2C1CONLbits.ACKEN);
+}
+
+/******************************************************************************
+ * Function:        Calculate_SENT_CRC
+ * Description:     Calculates the 4-bit CRC for a SENT message frame 
+ * according to SAE J2716 standard (Legacy, CRC-4/2.1).
+ * Uses a lookup table for efficiency.
+ * Input:           data_nibbles[] - An array of 6 uint8_t values (data nibbles).
+ * Output:          4-bit CRC value (uint8_t).
+ *****************************************************************************/
+uint8_t Calculate_SENT_CRC(uint8_t data_nibbles[]) 
+{
+    // SAE J2716 CRC Lookup Table
+    const uint8_t crc_lookup[16] = {0, 13, 7, 10, 14, 3, 9, 4, 1, 12, 6, 11, 15, 2, 8, 5};
+    
+    uint8_t crc_seed = 5; // Initial CRC seed value
+    
+    // The CRC calculation includes the 6 data nibbles
+    crc_seed = crc_lookup[crc_seed ^ data_nibbles[0]];
+    crc_seed = crc_lookup[crc_seed ^ data_nibbles[1]];
+    crc_seed = crc_lookup[crc_seed ^ data_nibbles[2]];
+    crc_seed = crc_lookup[crc_seed ^ data_nibbles[3]];
+    crc_seed = crc_lookup[crc_seed ^ data_nibbles[4]];
+    crc_seed = crc_lookup[crc_seed ^ data_nibbles[5]];
+    
+    return crc_seed;
 }

@@ -5,7 +5,7 @@
 #include <stdint.h> 
 
 // Configuration bits
-#pragma config FNOSC = PRIPLL, POSCMD = XT, FCKSM = CSECMD, OSCIOFNC = OFF
+#pragma config FNOSC = PRIPLL, POSCMD = XT, FCKSM = CSECMD, OSCIOFNC = OFF, IOL1WAY = OFF          
 #pragma config FWDTEN = OFF, ICS = PGD1, BOREN0 = OFF, ALTI2C1 = OFF, DMTEN = DISABLE
 
 //
@@ -48,7 +48,7 @@ volatile uint8_t buffer[6];
 volatile float T, H;
 volatile uint32_t count = 1;
 
-uint16_t tickTime = 50;             // Tick time in us
-float peripheralClk = 39.77;      // in Mhz
+uint16_t tickTime = 3;             // Tick time in us
+float peripheralClk = 40.0;      // in Mhz
 
 #endif // End of MAIN_H_ 

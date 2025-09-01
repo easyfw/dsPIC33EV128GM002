@@ -4,6 +4,10 @@
 #include <stdbool.h>
 #include <stdint.h> 
 
+// TEST Option
+#define TEST_CLK                            0
+#define NVRAM_RW_TEST               0
+
 // CLOCK
 #define FCAN                                    40000000UL      // Fcyc = 1/2Fpll
 #define FCY                                       40000000UL      // 
@@ -15,7 +19,6 @@
 #define NUM_DIGITS                          5                        // floating point digits to print
 #define STRING_BUFFER_SIZE          64                      // arbitrary length message buffer
 
-
 // CLOCK
 void oscConfig (void);
 
@@ -24,6 +27,8 @@ void Init_Hw ();
 void REFCLKO_Init (void);
 
 void SENT1_TX_Init (void);
+uint8_t Calculate_SENT_CRC(uint8_t data_nibbles[]);
+
 void ADC_Init (void);
 
 // Send a character to the serial port

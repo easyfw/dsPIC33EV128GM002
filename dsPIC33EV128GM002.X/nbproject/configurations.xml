@@ -4,11 +4,11 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>../../h/p33EV128GM002.h</itemPath>
-      <itemPath>../../h/zSSC4151.h</itemPath>
-      <itemPath>../../h/sHT4x.h</itemPath>
-      <itemPath>../../h/common.h</itemPath>
-      <itemPath>../../h/main.h</itemPath>
+      <itemPath>../h/main.h</itemPath>
+      <itemPath>../h/common.h</itemPath>
+      <itemPath>../h/p33EV128GM002.h</itemPath>
+      <itemPath>../h/sHT4x.h</itemPath>
+      <itemPath>../h/zSSC4151.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -30,6 +30,7 @@
   </logicalFolder>
   <sourceRootList>
     <Elem>../../h</Elem>
+    <Elem>../h</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -39,7 +40,7 @@
         <targetDevice>dsPIC33EV128GM002</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>noID</platformTool>
+        <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC16</languageToolchain>
         <languageToolchainVersion>2.00</languageToolchainVersion>
         <platform>3</platform>
@@ -190,7 +191,7 @@
       </C30-LD>
       <C30Global>
         <property key="combine-sourcefiles" value="false"/>
-        <property key="common-include-directories" value="..\..\h"/>
+        <property key="common-include-directories" value="..\h"/>
         <property key="dual-boot-partition" value="0"/>
         <property key="fast-math" value="false"/>
         <property key="generic-16-bit" value="false"/>
@@ -238,6 +239,7 @@
         <property key="debugoptions.debug-startup" value="Use system settings"/>
         <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>

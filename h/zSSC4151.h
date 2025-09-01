@@ -19,8 +19,18 @@
 #define CM_AUTH_KEY_LSB         0xA2
 
 #define CMD_READ_NVM_WORD       0x24 // ?? ????: Read NVM Word (App Desc. Table 5.3 ??? ????)
-#define CMD_START_NOM             0x01 // ??? ???? ??? ???? (StrtNom)
+#define CMD_START_NOM                   0x01 // ??? ???? ??? ???? (StrtNom)
 #define CMD_READ_OUTPUT_MEM     0x2C // ?? ???: Read Output Memory (??????)
+#define CMD_RD_OUT_MEM_BURST    0x2E // Read Output Memory in Burst Mode
+
+#define CMD_STRT_MEAS_TASK      0x09 // Start Measurement Task
+#define CMD_CP_NVM_TO_SHDW      0x18
+
+// --- 교정 상수 (Calibration Constants) ---
+// SENSOR_RAW_MIN: 센서 출력이 0%일 때의 32비트 Raw 값 (부호 있는 정수로 처리)
+// SENSOR_RAW_MAX: 센서 출력이 4%일 때의 32비트 Raw 값 (부호 있는 정수로 처리)
+#define SENSOR_RAW_MIN  (int32_t)0x00230000L
+#define SENSOR_RAW_MAX  (int32_t)0x00350000L // 4%에 해당하는 값을 실제 교정해야 합니다 (임시 테스트 값)
 
 //==============================================================================
 // 구조체 및 열거형 정의 (Typedefs)
@@ -50,19 +60,20 @@ typedef enum
 void Crc16_update (uint16_t *crc, uint8_t data);
 uint16_t Calculate_ZSSC_CRC (const uint16_t *nvm_data);
 
-void Dump_NVM_Map (void);
 bool ZSSC4151_Probe_CM (void);
 
 int ZSSC4151_EnterCommandMode (void);
 int ZSSC4151_Start_Normal_Mode (void);
 
-bool ZSSC4151_ReadNvm (uint8_t nvm_addr, uint16_t *value);
-int ZSSC4151_Write_NVM (unsigned char reg_addr, unsigned int data);
 int ZSSC4151_Unlock_NVM (void);
 int ZSSC4151_WriteNvmWord (uint8_t nvm_addr, uint16_t w);
 int ZSSC4151_ReadNvmWord (uint8_t nvm_addr, uint16_t *read_data);
-int ZSSC4151_Read_Output_Data (uint8_t ram_addr, uint16_t *read_data);
 int ZSSC4151_Read_Command_Response32 (uint8_t command, uint32_t *response_data);
+
+int ZSSC4151_CopyNvmToShadow(void);
+int ZSSC4151_StartMeaTask(uint8_t taskNum, uint8_t repeats, uint8_t avgFactor);
+int ZSSC4151_ReadRamBurst(uint8_t startAddr, uint8_t wordCount, uint8_t* readBuffer);
+int Get_ZSSC4151_BridgeRaw(int16_t *raw_value);
 
 /**
  * @brief 현재 센서의 상태를 반환하는 함수

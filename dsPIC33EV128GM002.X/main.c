@@ -20,20 +20,19 @@ int main (void)
     Init_Hw ();
     UART1_Init ();
     I2C1_Init ();
-
-    REFCLKO_Init ();
-    ADC_Init ();
+#if     TEST_CLK
+    REFCLKO_Init ();    
+#endif    
+#if         !NVRAM_RW_TEST          
     SENT1_TX_Init ();
+#endif    
 
+#if         NVRAM_RW_TEST        
     bool cmd_mode_ok = (ZSSC4151_EnterCommandMode () == 0);
-
     dbg_put_string ("Clearing IC Status flags...\r\n");
     
-    if (ZSSC4151_Clear_Status () != 0)
-    {
-        dbg_put_string ("Warning: Failed to clear status flags.\r\n");
-    }
-
+    if (ZSSC4151_Clear_Status () != 0) dbg_put_string ("Warning: Failed to clear status flags.\r\n");
+    
     if (!cmd_mode_ok)
     {
         dbg_put_string ("Failed to Enter Command Mode!!\r\n");
@@ -42,10 +41,7 @@ int main (void)
     dbg_put_string ("Command Mode is OK!!\r\n");
 
     uint16_t nvm_buffer[128];
-    for (int i = 0; i < 128; i++)
-    {
-        nvm_buffer[i] = harsh_emc_nvm_config[i];
-    }
+    for (int i = 0; i < 128; i++) nvm_buffer[i] = harsh_emc_nvm_config[i];
 
     // Check Read Only Value
     dbg_put_string ("Reading factory-programmed values...\r\n");
@@ -135,7 +131,7 @@ int main (void)
             dbg_put_hex_word (nvm_buffer[addr]);
             dbg_put_string (" | Read: 0x");
             dbg_put_hex_word (read_val);
-        }
+        }                                                                                                                                   
 
         if (read_val != nvm_buffer[addr])
         {
@@ -152,62 +148,106 @@ int main (void)
 
     if (verify_ok) dbg_put_string ("\r\nVerification PASS!!\r\n");
     else dbg_put_string ("\r\nVerification FAIL!!\r\n");
-
-    dbg_put_string ("\r\n--- ZSSC4151 Normal Operation Mode ---\r\n");
-
-    ZSSC4151_Check_Status ();
-
-    // ???? ??? ???? 1: Normal Mode ???? ????? ???? ????
-    if (ZSSC4151_Start_Normal_Mode () != 0)
-    {
-        dbg_put_string ("Fatal: Failed to start Normal Mode!\r\n");
-        while (1);
-    }
-    dbg_put_string ("OK: Normal Mode Started. Acquiring data...\r\n\r\n");
-    dbg_put_string ("\r\n    ---- ???? ??????, ZSSC4151 raw ?????? ??, SENT ?????? ??? ----\r\n\r\n");
-
+    
+    while(1);
+#endif
+    
+    dbg_put_string("\r\nSystem Initialized. Starting Main Loop...\r\n");
+    
+    // 2. 메인 무한 루프
     while (1)
     {
-      // ... (???? ???? ?????? ?б? ?????? ?????? ????) ...
-        uint16_t adc_value, sense_value;
-        uint8_t status_nibble = 0x1;
-        float sht_temp, sht_humi;
+        int16_t bridge_raw_val = 0;        
+        float temp = 0.0f, humi = 0.0f;
+        float sensing_percent = 0.0f;
 
-        AD1CON1bits.SAMP = 1;
-        delay_us (10);
-        AD1CON1bits.SAMP = 0;
+        // 모든 센서 값 읽기
+        int zssc_ok = Get_ZSSC4151_BridgeRaw(&bridge_raw_val);
+        bool sht_ok = SHT4x_Read_TH(&temp, &humi);
 
-        while (!AD1CON1bits.DONE);
-        adc_value = ADC1BUF0;
+        if (zssc_ok == 0) 
+        { 
+            // Raw 값을 0~4.0 % 범위의 부동 소수점 값으로 변환
+            float scale_factor = 0.0f;
+            if ((SENSOR_RAW_MAX - SENSOR_RAW_MIN) != 0) 
+            {
+                 scale_factor = (float)(bridge_raw_val - SENSOR_RAW_MIN) / (float)(SENSOR_RAW_MAX - SENSOR_RAW_MIN);
+            }
+            
+            // 계산된 비율이 0~1 범위를 벗어나지 않도록 제한 (Clamping)
+            if (scale_factor < 0.0f) scale_factor = 0.0f;
+            if (scale_factor > 1.0f) scale_factor = 1.0f;
+            
+            sensing_percent = scale_factor * 4.0f;
+        } 
+        else dbg_put_string("Error: Failed to get ZSSC4151 Raw Value.\r\n");
 
-        uint8_t data_nibble1 = (adc_value >> 8) & 0x0F;
-        uint8_t data_nibble2 = (adc_value >> 4) & 0x0F;
-        uint8_t data_nibble3 = (adc_value >> 0) & 0x0F;
+        if (!sht_ok) dbg_put_string("Error: Failed to get SHT4x Value.\r\n");
+        
+        // --- 데이터를 각 자리 숫자로 분해하여 6개의 니블 생성 ---        
+        // 니블 1, 2: 센싱값 (예: 2.4 -> 2, 4)
+        uint8_t sense_digit1 = (uint8_t)sensing_percent; // 정수부
+        uint8_t sense_digit2 = (uint8_t)((sensing_percent - sense_digit1) * 10); // 소수부 첫째자리
 
-        SENT1DATH = ((uint16_t) status_nibble << 12) |
-              ((uint16_t) data_nibble1 << 8) |
-              ((uint16_t) data_nibble2 << 4) |
-              ((uint16_t) data_nibble3 << 0);
+        // 니블 3, 4: 온도 (예: 34 -> 3, 4)
+        uint8_t temp_int = (uint8_t)temp;
+        uint8_t temp_digit1 = temp_int / 10; // 십의 자리
+        uint8_t temp_digit2 = temp_int % 10; // 일의 자리
 
-        SENT1DATL = 0x0000;
+        // 니블 5, 6: 습도 (예: 45 -> 4, 5)
+        uint8_t humi_int = (uint8_t)humi;
+        uint8_t humi_digit1 = humi_int / 10; // 십의 자리
+        uint8_t humi_digit2 = humi_int % 10; // 일의 자리
+                
+        // --- CRC 계산을 위해 데이터 니블 배열 생성 ---
+        uint8_t data_nibbles[6];
+        data_nibbles[0] = sense_digit1;
+        data_nibbles[1] = sense_digit2;
+        data_nibbles[2] = temp_digit1;
+        data_nibbles[3] = temp_digit2;
+        data_nibbles[4] = humi_digit1;
+        data_nibbles[5] = humi_digit2;
+        
+    // --- CRC 계산 함수 호출 ---
+        uint8_t crc_nibble = Calculate_SENT_CRC(data_nibbles);        
+        
+        // --- SENT 데이터 프레임 생성 ---
+        uint8_t status_nibble = 0x1; // 상태: 정상
 
-        ZSSC4151_Read_Output_Data (0x01, &sense_value);
+        SENT1DATH = ((uint16_t)status_nibble << 12) |
+                  ((uint16_t)sense_digit1 << 8)    |
+                  ((uint16_t)sense_digit2 << 4)    |
+                  ((uint16_t)temp_digit1);
+                  
+        // SENT1DATL의 데이터 1~6, CRC 추가
+        SENT1DATL = ((uint16_t)temp_digit2 << 12)  |
+                ((uint16_t)humi_digit1 << 8)    |
+                ((uint16_t)humi_digit2 << 4)    |
+                ((uint16_t)crc_nibble); 
 
-        SHT4x_Read_TH (&sht_temp, &sht_humi);
+        // SENT 프레임 전송 시작
+        SENT1STATbits.SYNCTXEN = 1;
+        while(SENT1STATbits.SYNCTXEN == 1);        
+        
+        // --- 디버그 메시지 출력 ---
         dbg_put_hex_word (count++);
-        dbg_put_string (") SHT4x T: ");
-        dbg_put_float (sht_temp);
-        dbg_put_string ("(??C), H: ");
-        dbg_put_float (sht_humi);
-        dbg_put_string ("(%), rawData(by ZSSC): 0x");
-        dbg_put_hex_word (sense_value);
-        dbg_put_string (" , SENT: 0x");
-        dbg_put_hex_word (SENT1DATH);
-        dbg_put_string ("\r\n");
+        dbg_put_string (") Bridge Raw: ");
+        dbg_put_float(sensing_percent);
+        dbg_put_string(" %, Temp: ");
+        dbg_put_float(temp);
+        dbg_put_string(" C, Humi: ");
+        dbg_put_float(humi);
+        dbg_put_string(" % -> SENT Frame: 0x");
+        dbg_put_hex_word(SENT1DATH);
+        dbg_put_hex_word(SENT1DATL);
+        dbg_put_string(" | CRC: 0x");
+        dbg_put_hex_byte(crc_nibble);
+        dbg_put_string("\r\n");        
 
-        delay_10ms (50);
+        // 1초 대기 후 다음 측정 시작
+        delay_10ms(100);
     }
-
+    
     return 0;
 }
 
@@ -215,7 +255,6 @@ int main (void)
 void __attribute__ ((__interrupt__, no_auto_psv)) _T1Interrupt (void)
 {
     t1_tick++; // increment the 'slow tick'
-
     IFS0bits.T1IF = 0; //Clear Timer1 interrupt flag
 }
 
@@ -223,12 +262,10 @@ void __attribute__ ((__interrupt__, no_auto_psv)) _T1Interrupt (void)
 void __attribute__ ((__interrupt__, no_auto_psv)) _T2Interrupt (void)
 {
     t2_tick++; // we increment the variable f_tick
-
     IFS0bits.T2IF = 0; //Clear Timer2 interrupt flag
 }
 
 //
-
 void __attribute__ ((__interrupt__, no_auto_psv)) _T3Interrupt (void)
 {
     IFS0bits.T3IF = 0;
@@ -241,15 +278,5 @@ void __attribute__ ((__interrupt__, no_auto_psv)) _T3Interrupt (void)
  *****************************************************************************/
 void __attribute__ ((__interrupt__, __auto_psv__)) _SENT1Interrupt (void)
 {
-    /* Interrupt Service Routine code goes here */
-    if (SENT1CON1bits.RCVEN == 1) // was a RX message?
-    {
-        // Read data from SENT registers
-        datal = (SENT1DATL >> 4); // Format to 12 bit data
-        datah = SENT1DATH; // switch data + pot
-
-        sent_rx = 1; // a message was received
-    };
-
     IFS11bits.SENT1IF = 0; // clear interrupt flag
 }

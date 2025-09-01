@@ -10,6 +10,7 @@
             <make-dep-projects/>
             <sourceRootList>
                 <sourceRootElem>../../h</sourceRootElem>
+                <sourceRootElem>../h</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>
