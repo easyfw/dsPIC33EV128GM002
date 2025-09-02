@@ -24,7 +24,7 @@ int main (void)
     REFCLKO_Init ();    
 #endif    
 #if         !NVRAM_RW_TEST          
-    SENT1_TX_Init ();
+//    SENT1_TX_Init ();
 #endif    
 
 #if         NVRAM_RW_TEST        
@@ -157,29 +157,23 @@ int main (void)
     // 2. 메인 무한 루프
     while (1)
     {
-        int16_t bridge_raw_val = 0;        
+        int16_t raw = 0;        
         float temp = 0.0f, humi = 0.0f;
         float sensing_percent = 0.0f;
 
-        // 모든 센서 값 읽기
-        int zssc_ok = Get_ZSSC4151_BridgeRaw(&bridge_raw_val);
+        // 센서 값 읽기
+        int zssc_ok = Get_ZSSC4151_BridgeRaw(&raw);
         bool sht_ok = SHT4x_Read_TH(&temp, &humi);
 
         if (zssc_ok == 0) 
-        { 
-            // Raw 값을 0~4.0 % 범위의 부동 소수점 값으로 변환
-            float scale_factor = 0.0f;
-            if ((SENSOR_RAW_MAX - SENSOR_RAW_MIN) != 0) 
-            {
-                 scale_factor = (float)(bridge_raw_val - SENSOR_RAW_MIN) / (float)(SENSOR_RAW_MAX - SENSOR_RAW_MIN);
-            }
-            
-            // 계산된 비율이 0~1 범위를 벗어나지 않도록 제한 (Clamping)
-            if (scale_factor < 0.0f) scale_factor = 0.0f;
-            if (scale_factor > 1.0f) scale_factor = 1.0f;
-            
-            sensing_percent = scale_factor * 4.0f;
-        } 
+        {
+            // --- 고객사 사양에 따른 Raw 값 -> 퍼센트 변환 로직 ---
+            if (raw <= 10000) sensing_percent = 0.0f;
+            else if (raw <= 15000)  sensing_percent = 2.0f * (float)(raw - 10000) / (float)(15000 - 10000);                // 구간 1: 10000 (0%) ~ 15000 (2%)
+            else if (raw <= 20000)  sensing_percent = 2.0f + 1.0f * (float)(raw - 15000) / (float)(20000 - 15000);   // 구간 2: 15000 (2%) ~ 20000 (3%)
+            else if (raw <= 40000)  sensing_percent = 3.0f + 1.0f * (float)(raw - 20000) / (float)(40000 - 20000);   // 구간 3: 20000 (3%) ~ 40000 (4%)
+            else sensing_percent = 4.0f;      // bridge_raw_val > 40000
+        }
         else dbg_put_string("Error: Failed to get ZSSC4151 Raw Value.\r\n");
 
         if (!sht_ok) dbg_put_string("Error: Failed to get SHT4x Value.\r\n");
@@ -230,8 +224,10 @@ int main (void)
         while(SENT1STATbits.SYNCTXEN == 1);        
         
         // --- 디버그 메시지 출력 ---
-        dbg_put_hex_word (count++);
-        dbg_put_string (") Bridge Raw: ");
+        dbg_put_dec_word (count++);
+        dbg_put_string (") Raw: ");
+        dbg_put_dec_word(raw);        
+        dbg_put_string (", ");        
         dbg_put_float(sensing_percent);
         dbg_put_string(" %, Temp: ");
         dbg_put_float(temp);

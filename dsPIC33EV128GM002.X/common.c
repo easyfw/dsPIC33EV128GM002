@@ -241,6 +241,70 @@ void dbg_put_hex_word (uint16_t val)
     dbg_put_string (buffer);
 }
 
+/******************************************************************************
+ * Function:        dbg_put_decimal_byte
+ * Description:     Prints an 8-bit unsigned integer (0-255) in decimal format.
+ * Input:           value - The uint8_t value to print.
+ *****************************************************************************/
+void dbg_put_dec_byte(uint8_t value)
+{
+    char buffer[4]; // 8비트 최대값 255는 3자리 + 널 문자
+    int i = 0;
+
+    if (value == 0)
+    {
+        dbg_putc('0');
+        return;
+    }
+
+    // 숫자를 문자열로 변환 (역순으로 버퍼에 저장됨)
+    while (value > 0)
+    {
+        buffer[i++] = (value % 10) + '0';
+        value /= 10;
+    }
+    buffer[i] = '\0'; // 널 문자로 마무리
+
+    // 버퍼를 역순으로 출력하여 올바른 순서로 표시
+    while (i > 0)
+    {
+        i--;
+        dbg_putc(buffer[i]);
+    }
+}
+
+/******************************************************************************
+ * Function:        dbg_put_decimal_word
+ * Description:     Prints a 16-bit unsigned integer (0-65535) in decimal format.
+ * Input:           value - The uint16_t value to print.
+ *****************************************************************************/
+void dbg_put_dec_word(uint16_t value)
+{
+    char buffer[6]; // 16비트 최대값 65535는 5자리 + 널 문자
+    int i = 0;
+
+    if (value == 0)
+    {
+        dbg_putc('0');
+        return;
+    }
+
+    // 숫자를 문자열로 변환 (역순으로 버퍼에 저장됨)
+    while (value > 0)
+    {
+        buffer[i++] = (value % 10) + '0';
+        value /= 10;
+    }
+    buffer[i] = '\0'; // 널 문자로 마무리
+
+    // 버퍼를 역순으로 출력하여 올바른 순서로 표시
+    while (i > 0)
+    {
+        i--;
+        dbg_putc(buffer[i]);
+    }
+}
+
 //
 void dbg_put_string (char *s)
 {
@@ -295,6 +359,7 @@ void dbg_put_float (float temp)
     dbg_putc ((dec_part / 10) + '0');
     dbg_putc ((dec_part % 10) + '0');
 }
+
 
 //
 int I2C1_SendByte (unsigned char data)

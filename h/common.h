@@ -40,6 +40,8 @@ void dbg_put_hex_byte (uint8_t val);
 void dbg_put_hex_word (uint16_t val);
 void dbg_put_float (float temp);
 void dbg_put_string (char *s);
+void dbg_put_dec_byte(uint8_t value);
+void dbg_put_dec_word(uint16_t value);
 
 // Delay
 void delay_10ms (uint16_t num);
