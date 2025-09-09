@@ -628,55 +628,7 @@ int ZSSC4151_ReadRamBurst(uint8_t startAddr, uint8_t wordCount, uint8_t* readBuf
     return 0; // 성공
 }
 
-/**
- * @brief ZSSC4151 브릿지 Raw 값을 읽어오는 전체 시퀀스를 테스트합니다.
- */
-/*
-int Get_ZSSC4151_BridgeRaw(int32_t *raw_value)
-{
-    uint8_t raw_buffer[4];
-    *raw_value = 0; // 에러 발생 시 0을 반환하도록 초기화
-
-    // 1. Command Mode 진입
-    if (ZSSC4151_EnterCommandMode() != 0) return -1;
-
-    // 2. NVM 설정값을 Shadow Register로 복사
-    if (ZSSC4151_CopyNvmToShadow() != 0) 
-    {
-        ZSSC4151_Start_Normal_Mode(); // 실패 시 Normal 모드로 복귀 시도
-        return -1;
-    }
-
-    // 3. StrtMeasTask(0,0,0) 커맨드 전송
-    if (ZSSC4151_StartMeasTask(0, 0, 0) != 0) 
-    {
-        ZSSC4151_Start_Normal_Mode();
-        return -1;
-    }
-
-    // 4. 측정 완료 대기 (20ms)
-    delay_10ms(2);
-
-    // 5. RAM에서 결과값 읽기
-    if (ZSSC4151_ReadRamBurst(0x15, 2, raw_buffer) != 0) 
-    {
-        ZSSC4151_Start_Normal_Mode();
-        return -1;
-    }
-    
-    // 6. Normal Mode로 복귀
-    if (ZSSC4151_Start_Normal_Mode() != 0) return -1;
-    
-    // 7. 읽어온 값을 32비트 변수로 조합 (Big-endian)
-    *raw_value = ((uint32_t)raw_buffer[0] << 24) | 
-                 ((uint32_t)raw_buffer[1] << 16) | 
-                 ((uint32_t)raw_buffer[2] << 8)  | 
-                 raw_buffer[3];
-                 
-    return 0; // 모든 과정 성공
-}
-*/
-
+//
 int Get_ZSSC4151_BridgeRaw(int16_t *raw_value)
 {
     uint8_t raw_buffer[2]; // 2바이트만 수신하므로 버퍼 크기를 2로 변경
@@ -742,4 +694,65 @@ int ZSSC4151_CopyNvmToShadow(void)
     delay_us(500); 
     
     return 0;
+}
+
+/**
+ * @brief Normal Mode에서 I2C 'RdOutMemBurst (0x2E)' 명령으로 RAM 값을 읽기
+ * @param address 읽고자 하는 RAM의 시작 주소
+ * @param word_count 읽어올 워드(16비트)의 개수
+ * @param buffer 데이터를 수신할 버퍼의 포인터
+ * @return 성공 시 0, 실패 시 음수 에러 코드
+ */
+int ZSSC4151_Read_Ram_In_Normal_Mode(uint8_t address, uint8_t word_count, uint8_t* buffer)
+{
+    // 1. I2C Start
+    if (!I2C1_Start()) return -1;
+
+    // 2. 슬레이브 주소 전송 (쓰기 모드)
+    if (!I2C1_Write(ZSSC4151_WRITE_ADDR))
+    {
+        I2C1_Stop();
+        return -2;
+    }
+
+    // 3. 'RdOutMemBurst' 명령(0x2E) 전송
+    if (!I2C1_Write(0x2E))
+    {
+        I2C1_Stop();
+        return -3;
+    }
+
+    // 4. 인수 전송: 시작 주소(상위 바이트)와 워드 개수(하위 바이트)
+    if (!I2C1_Write(address)) // 상위 바이트: RAM 시작 주소
+    {
+        I2C1_Stop();
+        return -4;
+    }
+    if (!I2C1_Write(word_count - 1)) // 하위 바이트: 읽을 워드 개수 - 1
+    {
+        I2C1_Stop();
+        return -5;
+    }
+    
+    // 5. I2C Restart
+    if (!I2C1_Restart()) return -6;
+
+    // 6. 슬레이브 주소 전송 (읽기 모드)
+    if (!I2C1_Write(ZSSC4151_READ_ADDR))
+    {
+        I2C1_Stop();
+        return -7;
+    }
+
+    // 7. 데이터 수신
+    for (uint8_t i = 0; i < (word_count * 2); i += 2)
+    {
+        buffer[i] = I2C1_Read(true); // MSB 수신 후 ACK
+        buffer[i + 1] = I2C1_Read(i == (word_count * 2) - 2 ? false : true); // 마지막 바이트는 NACK, 그 외에는 ACK
+    }
+
+    // 8. I2C Stop
+    if (!I2C1_Stop()) return -8;
+
+    return 0; // 성공
 }
