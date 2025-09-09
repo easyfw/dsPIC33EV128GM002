@@ -113,11 +113,11 @@ Default Scalar Model: Small
 section                    address   length (PC units)   length (bytes) (dec)
 -------                    -------   -----------------   --------------------
 .text                        0x200               0x9cc           0xeb2  (3762)
-.const                       0xbcc               0x770           0xb28  (2856)
-.text                       0x133c              0x16ec          0x2262  (8802)
-.dinit                      0x2a28                0x28            0x3c  (60)
+.const                       0xbcc               0x7b8           0xb94  (2964)
+.text                       0x1384              0x1700          0x2280  (8832)
+.dinit                      0x2a84                0x28            0x3c  (60)
 
-                 Total "program" memory used (bytes):         0x3c78  (15480) 11%
+                 Total "program" memory used (bytes):         0x3d02  (15618) 11%
 
 
 "data" Memory  [Origin = 0x1000, Length = 0x2000]
@@ -216,90 +216,90 @@ External Symbols in Program Memory (by address):
                   0x000b70                  __fpack
                   0x000bbc                  __funpack2
                   0x000bcc                  _harsh_emc_nvm_config
-                  0x00133c                  _ZSSC4151_Probe_CM
-                  0x001436                  _Crc16_update
-                  0x001498                  _Calculate_ZSSC_CRC
-                  0x0014e0                  _ZSSC4151_Read_Command_Response32
-                  0x0015aa                  _ZSSC4151_Clear_Status
-                  0x001646                  _ZSSC4151_Check_Status
-                  0x0016c4                  _ZSSC4151_EnterCommandMode
-                  0x001728                  _ZSSC4151_Start_Normal_Mode
-                  0x00176c                  _ZSSC4151_Unlock_NVM
-                  0x0017e4                  _ZSSC4151_ReadNvmWord
-                  0x0018a2                  _ZSSC4151_WriteNvmWord
-                  0x00193e                  _ZSSC4151_StartMeasTask
-                  0x0019d0                  _ZSSC4151_ReadRamBurst
-                  0x001ab4                  _Get_ZSSC4151_BridgeRaw
-                  0x001b26                  _ZSSC4151_CopyNvmToShadow
-                  0x001b6a                  _ZSSC4151_Read_Ram_In_Normal_Mode
-                  0x001c46                  _oscConfig
-                  0x001c9a                  _Init_Hw
-                  0x001d0e                  _REFCLKO_Init
-                  0x001d50                  _UART1_Init
-                  0x001d84                  _SENT1_TX_Init
-                  0x001df4                  _delay_10ms
-                  0x001e12                  _delay_us
-                  0x001e36                  _dbg_putc
-                  0x001e4e                  _dbg_put_hex_byte
-                  0x001e90                  _dbg_put_hex_word
-                  0x001ee8                  _dbg_put_dec_byte
-                  0x001f54                  _dbg_put_dec_word
-                  0x001fbc                  _dbg_put_string
-                  0x001fd6                  _dbg_put_float
-                  0x0020ea                  _I2C1_SendByte
-                  0x002112                  _I2C1_ReadByte
-                  0x002150                  _I2C_Scan
-                  0x0021b8                  _I2C1_BusReset
-                  0x0021ea                  _I2C1_Init
-                  0x002200                  _I2C1_WaitForIdle
-                  0x00221a                  _I2C1_Start
-                  0x002230                  _I2C1_Stop
-                  0x002246                  _I2C1_Restart
-                  0x00225c                  _I2C1_Write
-                  0x002286                  _I2C1_Read
-                  0x0022ce                  _I2C1_Ack
-                  0x0022e4                  _I2C1_Nack
-                  0x0022fa                  _Calculate_SENT_CRC
-                  0x00237c                  _main
-                  0x0028d0                  _SHT4x_Read_TH
+                  0x001384                  _ZSSC4151_Probe_CM
+                  0x00147e                  _Crc16_update
+                  0x0014e0                  _Calculate_ZSSC_CRC
+                  0x001528                  _ZSSC4151_Read_Command_Response32
+                  0x0015f2                  _ZSSC4151_Clear_Status
+                  0x00168e                  _ZSSC4151_Check_Status
+                  0x00170c                  _ZSSC4151_EnterCommandMode
+                  0x001770                  _ZSSC4151_Start_Normal_Mode
+                  0x0017b4                  _ZSSC4151_Unlock_NVM
+                  0x00182c                  _ZSSC4151_ReadNvmWord
+                  0x0018ea                  _ZSSC4151_WriteNvmWord
+                  0x001986                  _ZSSC4151_StartMeasTask
+                  0x001a18                  _ZSSC4151_ReadRamBurst
+                  0x001afc                  _Get_ZSSC4151_BridgeRaw
+                  0x001b6e                  _ZSSC4151_CopyNvmToShadow
+                  0x001bb2                  _ZSSC4151_Read_Ram_In_Normal_Mode
+                  0x001c8e                  _oscConfig
+                  0x001ce2                  _Init_Hw
+                  0x001d56                  _REFCLKO_Init
+                  0x001d98                  _UART1_Init
+                  0x001dcc                  _SENT1_TX_Init
+                  0x001e3c                  _delay_10ms
+                  0x001e5a                  _delay_us
+                  0x001e7e                  _dbg_putc
+                  0x001e96                  _dbg_put_hex_byte
+                  0x001ed8                  _dbg_put_hex_word
+                  0x001f30                  _dbg_put_dec_byte
+                  0x001f9c                  _dbg_put_dec_word
+                  0x002004                  _dbg_put_string
+                  0x00201e                  _dbg_put_float
+                  0x002132                  _I2C1_SendByte
+                  0x00215a                  _I2C1_ReadByte
+                  0x002198                  _I2C_Scan
+                  0x002200                  _I2C1_BusReset
+                  0x002232                  _I2C1_Init
+                  0x002248                  _I2C1_WaitForIdle
+                  0x002262                  _I2C1_Start
+                  0x002278                  _I2C1_Stop
+                  0x00228e                  _I2C1_Restart
+                  0x0022a4                  _I2C1_Write
+                  0x0022ce                  _I2C1_Read
+                  0x002316                  _I2C1_Ack
+                  0x00232c                  _I2C1_Nack
+                  0x002342                  _Calculate_SENT_CRC
+                  0x0023c4                  _main
+                  0x00292c                  _SHT4x_Read_TH
 
 External Symbols in Program Memory (by name):
 
-                  0x0022fa                  _Calculate_SENT_CRC
-                  0x001498                  _Calculate_ZSSC_CRC
-                  0x001436                  _Crc16_update
-                  0x001ab4                  _Get_ZSSC4151_BridgeRaw
-                  0x0022ce                  _I2C1_Ack
-                  0x0021b8                  _I2C1_BusReset
-                  0x0021ea                  _I2C1_Init
-                  0x0022e4                  _I2C1_Nack
-                  0x002286                  _I2C1_Read
-                  0x002112                  _I2C1_ReadByte
-                  0x002246                  _I2C1_Restart
-                  0x0020ea                  _I2C1_SendByte
-                  0x00221a                  _I2C1_Start
-                  0x002230                  _I2C1_Stop
-                  0x002200                  _I2C1_WaitForIdle
-                  0x00225c                  _I2C1_Write
-                  0x002150                  _I2C_Scan
-                  0x001c9a                  _Init_Hw
-                  0x001d0e                  _REFCLKO_Init
-                  0x001d84                  _SENT1_TX_Init
-                  0x0028d0                  _SHT4x_Read_TH
-                  0x001d50                  _UART1_Init
-                  0x001646                  _ZSSC4151_Check_Status
-                  0x0015aa                  _ZSSC4151_Clear_Status
-                  0x001b26                  _ZSSC4151_CopyNvmToShadow
-                  0x0016c4                  _ZSSC4151_EnterCommandMode
-                  0x00133c                  _ZSSC4151_Probe_CM
-                  0x0017e4                  _ZSSC4151_ReadNvmWord
-                  0x0019d0                  _ZSSC4151_ReadRamBurst
-                  0x0014e0                  _ZSSC4151_Read_Command_Response32
-                  0x001b6a                  _ZSSC4151_Read_Ram_In_Normal_Mode
-                  0x00193e                  _ZSSC4151_StartMeasTask
-                  0x001728                  _ZSSC4151_Start_Normal_Mode
-                  0x00176c                  _ZSSC4151_Unlock_NVM
-                  0x0018a2                  _ZSSC4151_WriteNvmWord
+                  0x002342                  _Calculate_SENT_CRC
+                  0x0014e0                  _Calculate_ZSSC_CRC
+                  0x00147e                  _Crc16_update
+                  0x001afc                  _Get_ZSSC4151_BridgeRaw
+                  0x002316                  _I2C1_Ack
+                  0x002200                  _I2C1_BusReset
+                  0x002232                  _I2C1_Init
+                  0x00232c                  _I2C1_Nack
+                  0x0022ce                  _I2C1_Read
+                  0x00215a                  _I2C1_ReadByte
+                  0x00228e                  _I2C1_Restart
+                  0x002132                  _I2C1_SendByte
+                  0x002262                  _I2C1_Start
+                  0x002278                  _I2C1_Stop
+                  0x002248                  _I2C1_WaitForIdle
+                  0x0022a4                  _I2C1_Write
+                  0x002198                  _I2C_Scan
+                  0x001ce2                  _Init_Hw
+                  0x001d56                  _REFCLKO_Init
+                  0x001dcc                  _SENT1_TX_Init
+                  0x00292c                  _SHT4x_Read_TH
+                  0x001d98                  _UART1_Init
+                  0x00168e                  _ZSSC4151_Check_Status
+                  0x0015f2                  _ZSSC4151_Clear_Status
+                  0x001b6e                  _ZSSC4151_CopyNvmToShadow
+                  0x00170c                  _ZSSC4151_EnterCommandMode
+                  0x001384                  _ZSSC4151_Probe_CM
+                  0x00182c                  _ZSSC4151_ReadNvmWord
+                  0x001a18                  _ZSSC4151_ReadRamBurst
+                  0x001528                  _ZSSC4151_Read_Command_Response32
+                  0x001bb2                  _ZSSC4151_Read_Ram_In_Normal_Mode
+                  0x001986                  _ZSSC4151_StartMeasTask
+                  0x001770                  _ZSSC4151_Start_Normal_Mode
+                  0x0017b4                  _ZSSC4151_Unlock_NVM
+                  0x0018ea                  _ZSSC4151_WriteNvmWord
                   0x000358                  __DefaultInterrupt
                   0x00033c                  __SENT1Interrupt
                   0x0002fa                  __T1Interrupt
@@ -339,18 +339,18 @@ External Symbols in Program Memory (by name):
                   0x00096a                  __typef
                   0x00090c                  __unpackdnrmf
                   0x000a56                  __unpackf
-                  0x001ee8                  _dbg_put_dec_byte
-                  0x001f54                  _dbg_put_dec_word
-                  0x001fd6                  _dbg_put_float
-                  0x001e4e                  _dbg_put_hex_byte
-                  0x001e90                  _dbg_put_hex_word
-                  0x001fbc                  _dbg_put_string
-                  0x001e36                  _dbg_putc
-                  0x001df4                  _delay_10ms
-                  0x001e12                  _delay_us
+                  0x001f30                  _dbg_put_dec_byte
+                  0x001f9c                  _dbg_put_dec_word
+                  0x00201e                  _dbg_put_float
+                  0x001e96                  _dbg_put_hex_byte
+                  0x001ed8                  _dbg_put_hex_word
+                  0x002004                  _dbg_put_string
+                  0x001e7e                  _dbg_putc
+                  0x001e3c                  _delay_10ms
+                  0x001e5a                  _delay_us
                   0x000bcc                  _harsh_emc_nvm_config
-                  0x00237c                  _main
-                  0x001c46                  _oscConfig
+                  0x0023c4                  _main
+                  0x001c8e                  _oscConfig
 
 Memory Configuration
 
@@ -602,34 +602,34 @@ __FALTREG
  .debug_abbrev    0x000690         0x14 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fpack.EP_o)
  .debug_abbrev    0x0006a4         0x14 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(funpack2.EP_o)
 
-.debug_line       0x000000        0xf51
+.debug_line       0x000000        0xf52
  *(.debug_line)
- .debug_line      0x000000        0x16f build/default/production/main.o
- .debug_line      0x00016f        0x1ea build/default/production/zSSC4151.o
- .debug_line      0x000359        0x1e2 build/default/production/common.o
- .debug_line      0x00053b         0xb8 build/default/production/sHT4x.o
- .debug_line      0x0005f3         0x37 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(feqltle.EP_o)
- .debug_line      0x00062a         0x35 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fgtge.EP_o)
- .debug_line      0x00065f         0x56 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fixsfsi.EP_o)
- .debug_line      0x0006b5         0x53 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fixunssfsi.EP_o)
- .debug_line      0x000708         0x3a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(floatsisf.EP_o)
- .debug_line      0x000742         0x3b c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(floatunsisf.EP_o)
- .debug_line      0x00077d         0x4a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(funpack.EP_o)
- .debug_line      0x0007c7        0x136 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(addsf3x.EP_o)
- .debug_line      0x0008fd        0x124 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(divsf3x.EP_o)
- .debug_line      0x000a21         0xcc c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(mulsf3x.EP_o)
- .debug_line      0x000aed         0x72 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(dnrmpackfx.EP_o)
- .debug_line      0x000b5f         0x7a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(unpackdnrmfx.EP_o)
- .debug_line      0x000bd9         0x5e c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(typefx.EP_o)
- .debug_line      0x000c37         0x51 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(propnanfx.EP_o)
- .debug_line      0x000c88         0x98 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(spackfx.EP_o)
- .debug_line      0x000d20         0x79 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(unpackfx.EP_o)
- .debug_line      0x000d99         0x1a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(errno.EP_o)
- .debug_line      0x000db3         0x53 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fcompare.EP_o)
- .debug_line      0x000e06         0x47 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(floatdisf.EP_o)
- .debug_line      0x000e4d         0x6c c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(floatundisf.EP_o)
- .debug_line      0x000eb9         0x5a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fpack.EP_o)
- .debug_line      0x000f13         0x3e c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(funpack2.EP_o)
+ .debug_line      0x000000        0x170 build/default/production/main.o
+ .debug_line      0x000170        0x1ea build/default/production/zSSC4151.o
+ .debug_line      0x00035a        0x1e2 build/default/production/common.o
+ .debug_line      0x00053c         0xb8 build/default/production/sHT4x.o
+ .debug_line      0x0005f4         0x37 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(feqltle.EP_o)
+ .debug_line      0x00062b         0x35 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fgtge.EP_o)
+ .debug_line      0x000660         0x56 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fixsfsi.EP_o)
+ .debug_line      0x0006b6         0x53 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fixunssfsi.EP_o)
+ .debug_line      0x000709         0x3a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(floatsisf.EP_o)
+ .debug_line      0x000743         0x3b c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(floatunsisf.EP_o)
+ .debug_line      0x00077e         0x4a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(funpack.EP_o)
+ .debug_line      0x0007c8        0x136 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(addsf3x.EP_o)
+ .debug_line      0x0008fe        0x124 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(divsf3x.EP_o)
+ .debug_line      0x000a22         0xcc c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(mulsf3x.EP_o)
+ .debug_line      0x000aee         0x72 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(dnrmpackfx.EP_o)
+ .debug_line      0x000b60         0x7a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(unpackdnrmfx.EP_o)
+ .debug_line      0x000bda         0x5e c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(typefx.EP_o)
+ .debug_line      0x000c38         0x51 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(propnanfx.EP_o)
+ .debug_line      0x000c89         0x98 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(spackfx.EP_o)
+ .debug_line      0x000d21         0x79 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(unpackfx.EP_o)
+ .debug_line      0x000d9a         0x1a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(errno.EP_o)
+ .debug_line      0x000db4         0x53 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fcompare.EP_o)
+ .debug_line      0x000e07         0x47 c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(floatdisf.EP_o)
+ .debug_line      0x000e4e         0x6c c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(floatundisf.EP_o)
+ .debug_line      0x000eba         0x5a c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(fpack.EP_o)
+ .debug_line      0x000f14         0x3e c:/program files/microchip/xc16/v2.00/bin/bin/../../lib\libc99-pic30-elf.a(funpack2.EP_o)
 
 .debug_frame      0x000000        0x5ce
  *(.debug_frame)
@@ -1955,63 +1955,63 @@ __c30_signature
  .ivt._SENT1Interrupt
                   0x000182          0x2 build/default/production/main.o
 
-.const              0x8bcc        0x770 load address 0x000bcc  
- .const             0x8bcc        0x4d0 build/default/production/main.o
+.const              0x8bcc        0x7b8 load address 0x000bcc  
+ .const             0x8bcc        0x518 build/default/production/main.o
                     0x8bcc                  _harsh_emc_nvm_config
- .const             0x909c        0x23c build/default/production/zSSC4151.o
- .const             0x92d8         0x64 build/default/production/common.o
+ .const             0x90e4        0x23c build/default/production/zSSC4151.o
+ .const             0x9320         0x64 build/default/production/common.o
 
-.text             0x00133c       0x16ec
- .text            0x00133c        0x90a build/default/production/zSSC4151.o
-                  0x00133c                  _ZSSC4151_Probe_CM
-                  0x001436                  _Crc16_update
-                  0x001498                  _Calculate_ZSSC_CRC
-                  0x0014e0                  _ZSSC4151_Read_Command_Response32
-                  0x0015aa                  _ZSSC4151_Clear_Status
-                  0x001646                  _ZSSC4151_Check_Status
-                  0x0016c4                  _ZSSC4151_EnterCommandMode
-                  0x001728                  _ZSSC4151_Start_Normal_Mode
-                  0x00176c                  _ZSSC4151_Unlock_NVM
-                  0x0017e4                  _ZSSC4151_ReadNvmWord
-                  0x0018a2                  _ZSSC4151_WriteNvmWord
-                  0x00193e                  _ZSSC4151_StartMeasTask
-                  0x0019d0                  _ZSSC4151_ReadRamBurst
-                  0x001ab4                  _Get_ZSSC4151_BridgeRaw
-                  0x001b26                  _ZSSC4151_CopyNvmToShadow
-                  0x001b6a                  _ZSSC4151_Read_Ram_In_Normal_Mode
- .text            0x001c46        0x736 build/default/production/common.o
-                  0x001c46                  _oscConfig
-                  0x001c9a                  _Init_Hw
-                  0x001d0e                  _REFCLKO_Init
-                  0x001d50                  _UART1_Init
-                  0x001d84                  _SENT1_TX_Init
-                  0x001df4                  _delay_10ms
-                  0x001e12                  _delay_us
-                  0x001e36                  _dbg_putc
-                  0x001e4e                  _dbg_put_hex_byte
-                  0x001e90                  _dbg_put_hex_word
-                  0x001ee8                  _dbg_put_dec_byte
-                  0x001f54                  _dbg_put_dec_word
-                  0x001fbc                  _dbg_put_string
-                  0x001fd6                  _dbg_put_float
-                  0x0020ea                  _I2C1_SendByte
-                  0x002112                  _I2C1_ReadByte
-                  0x002150                  _I2C_Scan
-                  0x0021b8                  _I2C1_BusReset
-                  0x0021ea                  _I2C1_Init
-                  0x002200                  _I2C1_WaitForIdle
-                  0x00221a                  _I2C1_Start
-                  0x002230                  _I2C1_Stop
-                  0x002246                  _I2C1_Restart
-                  0x00225c                  _I2C1_Write
-                  0x002286                  _I2C1_Read
-                  0x0022ce                  _I2C1_Ack
-                  0x0022e4                  _I2C1_Nack
-                  0x0022fa                  _Calculate_SENT_CRC
- .text            0x00237c        0x4de build/default/production/main.o
-                  0x00237c                  _main
- .text            0x00285a        0x1ce build/default/production/sHT4x.o
-                  0x0028d0                  _SHT4x_Read_TH
+.text             0x001384       0x1700
+ .text            0x001384        0x90a build/default/production/zSSC4151.o
+                  0x001384                  _ZSSC4151_Probe_CM
+                  0x00147e                  _Crc16_update
+                  0x0014e0                  _Calculate_ZSSC_CRC
+                  0x001528                  _ZSSC4151_Read_Command_Response32
+                  0x0015f2                  _ZSSC4151_Clear_Status
+                  0x00168e                  _ZSSC4151_Check_Status
+                  0x00170c                  _ZSSC4151_EnterCommandMode
+                  0x001770                  _ZSSC4151_Start_Normal_Mode
+                  0x0017b4                  _ZSSC4151_Unlock_NVM
+                  0x00182c                  _ZSSC4151_ReadNvmWord
+                  0x0018ea                  _ZSSC4151_WriteNvmWord
+                  0x001986                  _ZSSC4151_StartMeasTask
+                  0x001a18                  _ZSSC4151_ReadRamBurst
+                  0x001afc                  _Get_ZSSC4151_BridgeRaw
+                  0x001b6e                  _ZSSC4151_CopyNvmToShadow
+                  0x001bb2                  _ZSSC4151_Read_Ram_In_Normal_Mode
+ .text            0x001c8e        0x736 build/default/production/common.o
+                  0x001c8e                  _oscConfig
+                  0x001ce2                  _Init_Hw
+                  0x001d56                  _REFCLKO_Init
+                  0x001d98                  _UART1_Init
+                  0x001dcc                  _SENT1_TX_Init
+                  0x001e3c                  _delay_10ms
+                  0x001e5a                  _delay_us
+                  0x001e7e                  _dbg_putc
+                  0x001e96                  _dbg_put_hex_byte
+                  0x001ed8                  _dbg_put_hex_word
+                  0x001f30                  _dbg_put_dec_byte
+                  0x001f9c                  _dbg_put_dec_word
+                  0x002004                  _dbg_put_string
+                  0x00201e                  _dbg_put_float
+                  0x002132                  _I2C1_SendByte
+                  0x00215a                  _I2C1_ReadByte
+                  0x002198                  _I2C_Scan
+                  0x002200                  _I2C1_BusReset
+                  0x002232                  _I2C1_Init
+                  0x002248                  _I2C1_WaitForIdle
+                  0x002262                  _I2C1_Start
+                  0x002278                  _I2C1_Stop
+                  0x00228e                  _I2C1_Restart
+                  0x0022a4                  _I2C1_Write
+                  0x0022ce                  _I2C1_Read
+                  0x002316                  _I2C1_Ack
+                  0x00232c                  _I2C1_Nack
+                  0x002342                  _Calculate_SENT_CRC
+ .text            0x0023c4        0x4f2 build/default/production/main.o
+                  0x0023c4                  _main
+ .text            0x0028b6        0x1ce build/default/production/sHT4x.o
+                  0x00292c                  _SHT4x_Read_TH
 
-.dinit            0x002a28         0x28
- .dinit           0x002a28         0x28 data_init
+.dinit            0x002a84         0x28
+ .dinit           0x002a84         0x28 data_init

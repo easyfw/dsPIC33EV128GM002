@@ -3,19 +3,10 @@
  * Author: easyf
  *
  * Created on 2025/8/13
- * * --- 수정 및 분석 내용 ---
- * 1. [구조적 문제 해결] NVM 쓰기/검증 완료 후 무한 루프(while(1))에 빠져 
- * 실제 센서 값을 읽는 메인 루프로 진입하지 못하는 문제를 수정했습니다.
- * 2. [오류 수정] 칩은 전원 인가 후 자동으로 Normal Mode로 시작하므로, 불필요하게 
- * Normal Mode 시작 명령을 다시 보내서 발생하던 오류를 수정했습니다.
- * 3. [최종 수정] 고객사 요구사항에 맞춰, Normal Mode 중에도 I2C 통신이 가능한
- * 'RdOutMemBurst (0x2E)' 명령을 사용하여 RAM 0x41번지의 최종 보정 값을
- * 직접 읽어오도록 로직을 수정했습니다.
- * 4. [NVM 프로그래밍 활성화] I2C 읽기 실패 오류의 근본 원인인 '미프로그래밍된 NVM'
- * 문제를 해결하기 위해, 부팅 시 NVM 프로그래밍 로직이 항상 실행되도록 수정했습니다.
- * 5. [디버깅] Normal Mode 전환 시 I2C 통신이 두절되는 현상을 확인하기 위해
- * 'ZSSC4151_Start_Normal_Mode()' 호출을 주석 처리하여 Command Mode에 머무르도록 수정했습니다.
- * 6. [사용자 코드 반영] 사용자께서 제공해주신 I2C RAM 읽기 함수 코드로 교체했습니다.
+ * 1. 고객사 요구사항에 맞춰, Normal Mode 중에도 I2C 통신이 가능한 'RdOutMemBurst (0x2E)' 명령을 사용하여 
+ * RAM 0x41번지의 최종 보정 값을 직접 읽어오도록 Code를 수정
+ * 2. I2C 읽기 실패 오류의 근본 원인인 '미프로그래밍된 NVM' 문제를 해결하기 위해, 부팅 시 NVM 프로그래밍 로직을
+ *  항상 실행되도록 수정함.
  */
 #include <stdio.h>
 
@@ -160,7 +151,15 @@ int main (void)
             while(1);
         }
 
-       dbg_put_string("NVM Programming complete. Staying in Command Mode for debugging.\r\n");
+        dbg_put_string("Programming complete. Starting Normal Mode...\r\n");
+        if (ZSSC4151_Start_Normal_Mode() != 0) 
+        {
+            dbg_put_string("Fatal: Failed to start Normal Mode after NVM programming.\r\n");
+            while(1);
+        }
+        delay_10ms(1); 
+        dbg_put_string("Chip is now in Normal Mode.\r\n");
+        
     }
 #endif    
 #endif
