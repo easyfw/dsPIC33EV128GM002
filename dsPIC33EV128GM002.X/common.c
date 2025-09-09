@@ -137,7 +137,7 @@ void SENT1_TX_Init (void)
     // 2. PPS 레지스터 잠금 해제
     __builtin_write_OSCCONL(OSCCON & 0xBF);
 
-    // 3. SENT1 출력을 RP42 핀으로 매핑 (데이터시트 TABLE 11-3 & TABLE 4-14 기반)
+    // 3. SENT1 출력을 RP43 핀으로 매핑 (데이터시트 TABLE 11-3 & TABLE 4-14 기반)
     //    SENT1 Function Code: 0b111001
     RPOR4bits.RP43R = 0b111001; 
 

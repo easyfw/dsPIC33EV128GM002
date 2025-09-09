@@ -26,11 +26,14 @@
 #define CMD_STRT_MEAS_TASK      0x09 // Start Measurement Task
 #define CMD_CP_NVM_TO_SHDW      0x18
 
+// --- ZSSC4151 RAM 주소 정의 ---
+#define ZSSC_RAM_ADDR_BRIDGE_RESULT 0x41
+
 // --- 교정 상수 (Calibration Constants) ---
-// SENSOR_RAW_MIN: 센서 출력이 0%일 때의 32비트 Raw 값 (부호 있는 정수로 처리)
-// SENSOR_RAW_MAX: 센서 출력이 4%일 때의 32비트 Raw 값 (부호 있는 정수로 처리)
-#define SENSOR_RAW_MIN  (int32_t)0x00230000L
-#define SENSOR_RAW_MAX  (int32_t)0x00350000L // 4%에 해당하는 값을 실제 교정해야 합니다 (임시 테스트 값)
+// SENSOR_15BIT_MIN: 센서 출력이 0%일 때의 15비트 Raw 값 (부호 있는 정수로 처리)
+// SENSOR_15BIT_MAX: 센서 출력이 4%일 때의 15비트 Raw 값 (부호 있는 정수로 처리)
+#define SENSOR_15BIT_MIN  2000   // 예시: 0%일 때의 15비트 값 (실제 교정 필요!)
+#define SENSOR_15BIT_MAX  30000  // 4%에 해당하는 센서의 최대 출력값 (고객사 요청 임시값)
 
 //==============================================================================
 // 구조체 및 열거형 정의 (Typedefs)

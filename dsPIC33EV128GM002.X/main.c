@@ -23,11 +23,13 @@ int main (void)
 #if     TEST_CLK
     REFCLKO_Init ();    
 #endif    
-#if         !NVRAM_RW_TEST          
-//    SENT1_TX_Init ();
-#endif    
 
-#if         NVRAM_RW_TEST        
+#if         SENT_PULSE_ONLY
+    SENT1_TX_Init ();
+#endif    
+    
+#if        ! SENT_PULSE_ONLY
+#if         NVRAM_N_UART        
     bool cmd_mode_ok = (ZSSC4151_EnterCommandMode () == 0);
     dbg_put_string ("Clearing IC Status flags...\r\n");
     
@@ -151,96 +153,94 @@ int main (void)
     
     while(1);
 #endif
+#endif
     
-    dbg_put_string("\r\nSystem Initialized. Starting Main Loop...\r\n");
+    dbg_put_string("\r\nSystem Initialized.\r\n");
+
+    // ZSSC4151을 Normal 모드로 전환 
+    dbg_put_string("Starting ZSSC4151 in Normal Mode...\r\n");
     
-    // 2. 메인 무한 루프
+    if (ZSSC4151_Start_Normal_Mode() != 0) 
+    {
+        dbg_put_string("Fatal: Failed to start Normal Mode.\r\n");
+        while(1);
+    }
+    
+    dbg_put_string("ZSSC4151 is running. Starting Main Loop...\r\n");
+    delay_10ms(100); // 센서 안정화
+  
+    // 3. 메인 무한 루프
     while (1)
     {
-        int16_t raw = 0;        
+        uint16_t bridge_result_16bit = 0;
+        uint16_t bridge_15bit_val = 0;
         float temp = 0.0f, humi = 0.0f;
         float sensing_percent = 0.0f;
 
-        // 센서 값 읽기
-        int zssc_ok = Get_ZSSC4151_BridgeRaw(&raw);
+        // RAM 0x41에서 16비트 결과값을 직접 읽기
+        int zssc_ok = (ZSSC4151_ReadRamBurst(ZSSC_RAM_ADDR_BRIDGE_RESULT, 1, (uint8_t*)&bridge_result_16bit) == 0);
         bool sht_ok = SHT4x_Read_TH(&temp, &humi);
 
-        if (zssc_ok == 0) 
+        if (zssc_ok) 
         {
-            // --- 고객사 사양에 따른 Raw 값 -> 퍼센트 변환 로직 ---
-            if (raw <= 10000) sensing_percent = 0.0f;
-            else if (raw <= 15000)  sensing_percent = 2.0f * (float)(raw - 10000) / (float)(15000 - 10000);                // 구간 1: 10000 (0%) ~ 15000 (2%)
-            else if (raw <= 20000)  sensing_percent = 2.0f + 1.0f * (float)(raw - 15000) / (float)(20000 - 15000);   // 구간 2: 15000 (2%) ~ 20000 (3%)
-            else if (raw <= 40000)  sensing_percent = 3.0f + 1.0f * (float)(raw - 20000) / (float)(40000 - 20000);   // 구간 3: 20000 (3%) ~ 40000 (4%)
-            else sensing_percent = 4.0f;      // bridge_raw_val > 40000
-        }
-        else dbg_put_string("Error: Failed to get ZSSC4151 Raw Value.\r\n");
+            bool is_error = (bridge_result_16bit & 0x8000); // MSB가 에러 플래그인지 확인
+            bridge_15bit_val = bridge_result_16bit & 0x7FFF; // 15비트 데이터 추출
 
-        if (!sht_ok) dbg_put_string("Error: Failed to get SHT4x Value.\r\n");
+            if (is_error) dbg_put_string("Warning: ZSSC4151 Diagnostic Error Flag is set!\r\n");
+
+            // 15비트 값을 0~4.0 % 범위로 변환
+            float scale_factor = 0.0f;
+            if ((SENSOR_15BIT_MAX - SENSOR_15BIT_MIN) > 0) scale_factor = (float)(bridge_15bit_val - SENSOR_15BIT_MIN) / (float)(SENSOR_15BIT_MAX - SENSOR_15BIT_MIN);
+
+            if (scale_factor < 0.0f) scale_factor = 0.0f;
+            if (scale_factor > 1.0f) scale_factor = 1.0f;
+            sensing_percent = scale_factor * 4.0f;
+
+        } 
+        else  dbg_put_string("Error: Failed to read ZSSC4151 RAM.\r\n");
         
-        // --- 데이터를 각 자리 숫자로 분해하여 6개의 니블 생성 ---        
-        // 니블 1, 2: 센싱값 (예: 2.4 -> 2, 4)
-        uint8_t sense_digit1 = (uint8_t)sensing_percent; // 정수부
-        uint8_t sense_digit2 = (uint8_t)((sensing_percent - sense_digit1) * 10); // 소수부 첫째자리
-
-        // 니블 3, 4: 온도 (예: 34 -> 3, 4)
+        // sht_ok에 대한 에러 처리
+        if (!sht_ok) 
+        {
+            dbg_put_string("Error: Failed to get SHT4x Value.\r\n");
+            // 에러 발생 시 온도/습도 값을 안전한 값(0)으로 설정
+            temp = 0.0f;
+            humi = 0.0f;
+        }        
+        
+        // --- 데이터를 각 자리 숫자로 분해하여 6개의 니블 생성 ---
+        uint8_t sense_digit1 = (uint8_t)sensing_percent;
+        uint8_t sense_digit2 = (uint8_t)((sensing_percent - sense_digit1) * 10);
         uint8_t temp_int = (uint8_t)temp;
-        uint8_t temp_digit1 = temp_int / 10; // 십의 자리
-        uint8_t temp_digit2 = temp_int % 10; // 일의 자리
-
-        // 니블 5, 6: 습도 (예: 45 -> 4, 5)
+        uint8_t temp_digit1 = (temp_int / 10) % 10;
+        uint8_t temp_digit2 = temp_int % 10;
         uint8_t humi_int = (uint8_t)humi;
-        uint8_t humi_digit1 = humi_int / 10; // 십의 자리
-        uint8_t humi_digit2 = humi_int % 10; // 일의 자리
-                
-        // --- CRC 계산을 위해 데이터 니블 배열 생성 ---
-        uint8_t data_nibbles[6];
-        data_nibbles[0] = sense_digit1;
-        data_nibbles[1] = sense_digit2;
-        data_nibbles[2] = temp_digit1;
-        data_nibbles[3] = temp_digit2;
-        data_nibbles[4] = humi_digit1;
-        data_nibbles[5] = humi_digit2;
-        
-    // --- CRC 계산 함수 호출 ---
-        uint8_t crc_nibble = Calculate_SENT_CRC(data_nibbles);        
+        uint8_t humi_digit1 = (humi_int / 10) % 10;
+        uint8_t humi_digit2 = humi_int % 10;
         
         // --- SENT 데이터 프레임 생성 ---
-        uint8_t status_nibble = 0x1; // 상태: 정상
+        uint8_t status_nibble = 0x1;
+        SENT1DATH = ((uint16_t)status_nibble << 12) | ((uint16_t)sense_digit1 << 8) | ((uint16_t)sense_digit2 << 4) | ((uint16_t)temp_digit1);
+        SENT1DATL = ((uint16_t)temp_digit2 << 12) | ((uint16_t)humi_digit1 << 8) | ((uint16_t)humi_digit2 << 4);
 
-        SENT1DATH = ((uint16_t)status_nibble << 12) |
-                  ((uint16_t)sense_digit1 << 8)    |
-                  ((uint16_t)sense_digit2 << 4)    |
-                  ((uint16_t)temp_digit1);
-                  
-        // SENT1DATL의 데이터 1~6, CRC 추가
-        SENT1DATL = ((uint16_t)temp_digit2 << 12)  |
-                ((uint16_t)humi_digit1 << 8)    |
-                ((uint16_t)humi_digit2 << 4)    |
-                ((uint16_t)crc_nibble); 
-
-        // SENT 프레임 전송 시작
         SENT1STATbits.SYNCTXEN = 1;
-        while(SENT1STATbits.SYNCTXEN == 1);        
+        while(SENT1STATbits.SYNCTXEN == 1);
         
         // --- 디버그 메시지 출력 ---
-        dbg_put_dec_word (count++);
-        dbg_put_string (") Raw: ");
-        dbg_put_dec_word(raw);        
-        dbg_put_string (", ");        
+        dbg_put_hex_word (count++);
+        dbg_put_string (") Sense: ");
         dbg_put_float(sensing_percent);
-        dbg_put_string(" %, Temp: ");
+        dbg_put_string(" % (15bit Raw: 0x");
+        dbg_put_hex_word(bridge_15bit_val); // 15비트 Raw 값 출력 추가
+        dbg_put_string("), Temp: ");
         dbg_put_float(temp);
         dbg_put_string(" C, Humi: ");
         dbg_put_float(humi);
         dbg_put_string(" % -> SENT Frame: 0x");
         dbg_put_hex_word(SENT1DATH);
         dbg_put_hex_word(SENT1DATL);
-        dbg_put_string(" | CRC: 0x");
-        dbg_put_hex_byte(crc_nibble);
-        dbg_put_string("\r\n");        
-
-        // 1초 대기 후 다음 측정 시작
+        dbg_put_string("\r\n");
+        
         delay_10ms(100);
     }
     
