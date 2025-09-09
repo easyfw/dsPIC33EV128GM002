@@ -11,7 +11,7 @@
 // only generate SENT Pulse Waveform (SENT=O, UART=x))
 #define SENT_PULSE_ONLY                             0  // 0 : SENT=x, UART=O, 1 : SENT=O, UART=x
 
-#define AFTER_1_TIME_WRITING_NVRAM      1    // After First 1 time NVRAM wring, it should be set to 0. 
+#define AFTER_1_TIME_WRITING_NVRAM      1    // NVRAM writing 
 
 // CLOCK
 #define FCAN                                    40000000UL      // Fcyc = 1/2Fpll
