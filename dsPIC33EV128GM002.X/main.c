@@ -3,10 +3,6 @@
  * Author: easyf
  *
  * Created on 2025/8/13
- * 1. 고객사 요구사항에 맞춰, Normal Mode 중에도 I2C 통신이 가능한 'RdOutMemBurst (0x2E)' 명령을 사용하여 
- * RAM 0x41번지의 최종 보정 값을 직접 읽어오도록 Code를 수정
- * 2. I2C 읽기 실패 오류의 근본 원인인 '미프로그래밍된 NVM' 문제를 해결하기 위해, 부팅 시 NVM 프로그래밍 로직을
- *  항상 실행되도록 수정함.
  */
 #include <stdio.h>
 
@@ -16,173 +12,283 @@
 #include "..\h\zSSC4151.h"
 #include "..\h\sHT4x.h"
 
+// --- 읽고자 하는 RAM 범위 정의 ---
+#define RAM_START_ADDRESS_TO_READ 0x00
+#define RAM_WORD_COUNT_TO_READ    0x18+1 // 0부터 20까지는 총 21개 워드
+
 //
-int main (void)
+int main(void)
 {
-    oscConfig ();
-
-    Init_Hw ();
-    UART1_Init ();
-    I2C1_Init ();
-#if      TEST_CLK
-    REFCLKO_Init ();    
-#endif    
-
-#if          SENT_PULSE_ONLY
-    SENT1_TX_Init ();
+    // 1. System Initialization
+    oscConfig();
+    Init_Hw();
+    I2C1_Init();
+    
+#if     UART_ENABLE    
+    UART1_Init();
+#else
+    SENT1_TX_Init (void);    
 #endif    
     
-#if          ! SENT_PULSE_ONLY
-#if         AFTER_1_TIME_WRITING_NVRAM    
+#if     NVRAM_WRITE_TEST
+    bool cmd_mode_ok = (ZSSC4151_EnterCommandMode () == 0);
+    dbg_put_string ("Entering Command Mode to program NVM...\r\n");
+        
+    if (ZSSC4151_Clear_Status () != 0) dbg_put_string ("Warning: Failed to clear status flags.\r\n");
+        
+    if (!cmd_mode_ok)
     {
-        bool cmd_mode_ok = (ZSSC4151_EnterCommandMode () == 0);
-        dbg_put_string ("Entering Command Mode to program NVM...\r\n");
+        dbg_put_string ("Fatal: Failed to Enter Command Mode!!\r\n");
+        while (1); 
+    }
+    dbg_put_string ("Command Mode is OK!!\r\n");
+
+    uint16_t nvm_buffer[128];
+    
+#if NVM_RESPONSE_TIME    
+    for (int i = 0; i < 128; i++) nvm_buffer[i] = nvm_response_time_config[i];
+#else
+    for (int i = 0; i < 128; i++) nvm_buffer[i] = harsh_emc_nvm_config[i];
+#endif    
+    
+    // Check Read Only Value
+    dbg_put_string ("Reading factory-programmed values...\r\n");
+      
+    bool read_ok = true;
+    if (ZSSC4151_ReadNvmWord (0x3D, &nvm_buffer[0x3D]) != 0) read_ok = false;
+
+    for (int addr = 0x79; addr <= 0x7F; addr++)
+    {
+        if (ZSSC4151_ReadNvmWord (addr, &nvm_buffer[addr]) != 0)
+        {
+            read_ok = false;
+            break;
+        }
+    }
+
+    if (!read_ok)
+    {
+        dbg_put_string ("Failed to read factory values!\r\n");
+        while (1);
+    }
+    dbg_put_string ("Factory values read OK.\r\n");
+
+    uint16_t new_crc = Calculate_ZSSC_CRC (nvm_buffer);
+    nvm_buffer[0x00] = new_crc;
+
+    dbg_put_string ("OK: New CRC calculated: 0x");
+    dbg_put_hex_word (new_crc);
+    dbg_put_string ("\r\n");
+         
+    if (ZSSC4151_Unlock_NVM () != 0)
+    {
+        dbg_put_string ("NVRAM Unlock is failure!!\r\n");
+        while (1);
+    }
+    dbg_put_string ("NVRAM Unlock is OK!!\r\n");
+
+    // Write to NVRRAM
+    dbg_put_string ("Writing data to NVM (0x00 to 0x78)...\r\n");
         
-        if (ZSSC4151_Clear_Status () != 0) dbg_put_string ("Warning: Failed to clear status flags.\r\n");
+    bool write_ok = true;
+    for (int addr = 0; addr < 0x79; addr++)
+    {
+        if (ZSSC4151_WriteNvmWord (addr, nvm_buffer[addr]) != 0)
+        {
+            dbg_put_hex_byte (addr);
+            dbg_put_string ("\r\n");
+            write_ok = false;
+            break;
+        }
+        delay_10ms(1);
+    }
+
+    if (!write_ok)
+    {
+        dbg_put_string ("Fatal: NVRAM write process aborted!\r\n");
+        while (1);
+    }
+    dbg_put_string ("OK: NVRAM write commands sent.\r\n");
+
+    dbg_put_string ("Waiting for NVM programming to complete...\r\n");
+    delay_10ms (5);      // waiting for stable
+
+    // Verification
+    dbg_put_string ("Verifying written data...\r\n");
         
-        if (!cmd_mode_ok)
+    bool verify_ok = true;
+   
+    for (int addr = 0; addr < 0x79; addr++)
+    {
+        uint16_t read_val;
+        if (ZSSC4151_ReadNvmWord (addr, &read_val) != 0)
         {
-            dbg_put_string ("Fatal: Failed to Enter Command Mode!!\r\n");
-            while (1); 
-        }
-        dbg_put_string ("Command Mode is OK!!\r\n");
-
-        uint16_t nvm_buffer[128];
-        for (int i = 0; i < 128; i++) nvm_buffer[i] = harsh_emc_nvm_config[i];
-
-        // Check Read Only Value
-        dbg_put_string ("Reading factory-programmed values...\r\n");
-        
-        bool read_ok = true;
-        if (ZSSC4151_ReadNvmWord (0x3D, &nvm_buffer[0x3D]) != 0) read_ok = false;
-
-        for (int addr = 0x79; addr <= 0x7F; addr++)
-        {
-            if (ZSSC4151_ReadNvmWord (addr, &nvm_buffer[addr]) != 0)
-            {
-                read_ok = false;
-                break;
-            }
-        }
-
-        if (!read_ok)
-        {
-            dbg_put_string ("Failed to read factory values!\r\n");
-            while (1);
-        }
-        dbg_put_string ("Factory values read OK.\r\n");
-
-        // For NVRAM W/R testing
-//        nvm_buffer[0x2E] = 0x4444;
-//        nvm_buffer[0x2F] = 0x6666;
-
-        uint16_t new_crc = Calculate_ZSSC_CRC (nvm_buffer);
-        nvm_buffer[0x00] = new_crc;
-
-        dbg_put_string ("OK: New CRC calculated: 0x");
-        dbg_put_hex_word (new_crc);
-        dbg_put_string ("\r\n");
-
-        if (ZSSC4151_Unlock_NVM () != 0)
-        {
-            dbg_put_string ("NVRAM Unlock is failure!!\r\n");
-            while (1);
-        }
-        dbg_put_string ("NVRAM Unlock is OK!!\r\n");
-
-        // Write to NVRRAM
-        dbg_put_string ("Writing data to NVM (0x00 to 0x78)...\r\n");
-        
-        bool write_ok = true;
-        for (int addr = 0; addr < 0x79; addr++)
-        {
-            if (ZSSC4151_WriteNvmWord (addr, nvm_buffer[addr]) != 0)
-            {
-                dbg_put_hex_byte (addr);
-                dbg_put_string ("\r\n");
-                write_ok = false;
-                break;
-            }
-        }
-
-        if (!write_ok)
-        {
-            dbg_put_string ("Fatal: NVRAM write process aborted!\r\n");
-            while (1);
-        }
-        dbg_put_string ("OK: NVRAM write commands sent.\r\n");
-
-        dbg_put_string ("Waiting for NVM programming to complete...\r\n");
-        delay_10ms (5);      // waiting for stable
-
-        // Verification
-        dbg_put_string ("Verifying written data...\r\n");
-        
-        bool verify_ok = true;
-        for (int addr = 0; addr < 0x79; addr++)
-        {
-            uint16_t read_val;
-            if (ZSSC4151_ReadNvmWord (addr, &read_val) != 0)
-            {
-                dbg_put_string ("\r\nERROR: Read failed during verification at 0x");
-                dbg_put_hex_byte (addr);
-                dbg_put_string ("\r\n");
-                verify_ok = false;
-                break;
-            }                                                                                                   
-
-            if (read_val != nvm_buffer[addr])
-            {
-                dbg_put_string ("\r\nMISMATCH at 0x");
-                dbg_put_hex_byte (addr);
-                dbg_put_string (" | Wrote: 0x");
-                dbg_put_hex_word (nvm_buffer[addr]);
-                dbg_put_string (" | Read: 0x");
-                dbg_put_hex_word (read_val);
-                dbg_put_string ("\r\n");
-                verify_ok = false;
-            }
-        }
-
-        if (verify_ok) dbg_put_string ("\r\nVerification PASS!!\r\n");
+            dbg_put_string ("\r\nERROR: Read failed during verification at 0x");
+            dbg_put_hex_byte (addr);
+            dbg_put_string ("\r\n");
+            verify_ok = false;
+            break;
+        }  
         else 
         {
-            dbg_put_string ("\r\nVerification FAIL!!\r\n");
-            while(1);
+            dbg_put_hex_byte (addr);
+            dbg_put_string (" | Wrote: 0x");
+            dbg_put_hex_word (nvm_buffer[addr]);
+            dbg_put_string (" | Read: 0x");
+            dbg_put_hex_word (read_val);
+            dbg_put_string ("\r\n");
         }
-
-        dbg_put_string("Programming complete. Starting Normal Mode...\r\n");
-        if (ZSSC4151_Start_Normal_Mode() != 0) 
-        {
-            dbg_put_string("Fatal: Failed to start Normal Mode after NVM programming.\r\n");
-            while(1);
-        }
-        delay_10ms(1); 
-        dbg_put_string("Chip is now in Normal Mode.\r\n");
         
     }
+
+    if (verify_ok) dbg_put_string ("\r\nVerification PASS!!\r\n");
+    else 
+    {
+        dbg_put_string ("\r\nVerification FAIL!!\r\n");
+        while(1);
+    }
+
+    dbg_put_string("Programming complete. Starting Normal Mode...\r\n");
+        
+    
+    if (ZSSC4151_Start_Normal_Mode() != 0) 
+    {
+        dbg_put_string("Fatal: Failed to start Normal Mode after NVM programming.\r\n");
+        while(1);
+    }
+        
+    delay_10ms(10); 
+    dbg_put_string("Chip is now in Normal Mode.\r\n");      
+    while(1);    
 #endif    
+        
+#if         RAM_READ_TEST    
+    dbg_put_string("\r\nSystem Initialized.\n");
+    dbg_put_string("Starting ZSSC4151 RAW RAM Read Test...\n\n");
+    
+    delay_10ms(10);
+
+    // 2. Main Test Loop
+    while(1)
+    {
+        uint8_t ram_data_buffer[RAM_WORD_COUNT_TO_READ * 2];
+
+        // 2.1. Enter Command Mode
+        if (ZSSC4151_EnterCommandMode() != 0) 
+        {
+            dbg_put_string(" -> Failed to enter Command Mode!\n\n");
+            delay_10ms(100); 
+            continue;
+        }
+        dbg_put_string("1. Entered Command Mode.\n");
+        
+        // 2.2. Clear Status Flags
+        ZSSC4151_Clear_Status();
+        dbg_put_string("2. Clearing status flags...\n");
+
+        // 2.3. Copy NVM configuration to Shadow RAM
+        if (ZSSC4151_CopyNvmToShadow() != 0) 
+        {
+            dbg_put_string(" -> Failed to copy NVM to Shadow RAM!\n\n");
+            delay_10ms(100); 
+            continue;
+        }
+        delay_10ms(1); 
+        dbg_put_string("3. Copied NVM to Shadow RAM.\n");
+
+        // 2.4. Start Measurement Cycle
+        if (ZSSC4151_StartMeasCycle() != 0) 
+        {
+            dbg_put_string(" -> Failed to send StartMeasCycle command!\n\n");
+            delay_10ms(100); 
+            continue;
+        }
+        dbg_put_string("4. StartMeasCycle command sent.\n");
+        delay_10ms(2); // Wait for measurements to complete.
+        
+        //********************************************************
+        // 2.1. Enter Command Mode
+        if (ZSSC4151_EnterCommandMode() != 0) 
+        {
+            dbg_put_string(" -> Failed to enter Command Mode!\n\n");
+            delay_10ms(100); 
+            continue;
+        }
+        dbg_put_string("1. Entered Command Mode.\n");        
+        //********************************************************       
+
+        // 2.5. [Diagnostics] Check Final Chip Status
+        dbg_put_string("5. Checking FINAL chip status...\n");
+        ZSSC4151_Check_Status_Registers();
+
+        // 2.6. Read Raw Data from RAM
+        dbg_put_string("6. Reading RAM data...\n");
+        int result = ZSSC4151_ReadRam_Corrected(RAM_START_ADDRESS_TO_READ, RAM_WORD_COUNT_TO_READ, ram_data_buffer);
+
+        if (result == 0)
+        {
+            dbg_put_string(" -> Read Success!\n");
+            
+            // Print the read data
+            for (int i = 0; i < RAM_WORD_COUNT_TO_READ; i++)
+            {
+                // Combine two bytes into a 16-bit word (assuming Big Endian from sensor)
+                int16_t word_data = ((int16_t)ram_data_buffer[i*2] << 8) | (uint8_t)ram_data_buffer[i*2 + 1];
+                
+                dbg_put_string("[0x");
+                dbg_put_hex_word(RAM_START_ADDRESS_TO_READ + i);
+                dbg_put_string("] 0x");
+                dbg_put_hex_word(word_data);
+                dbg_put_string(",  ");
+            }
+        }
+        else dbg_put_string(" -> Read Failed!\n");
+
+        dbg_put_string("\r\n");
+        delay_10ms(200); // Wait 2 seconds before the next cycle
+    }
 #endif
     
-    dbg_put_string("\r\nSystem Initialized.\r\n");
-
-    dbg_put_string("ZSSC4151 is running. Starting Main Loop...\r\n");
-    delay_10ms(100); // 센서 안정화
-  
-    // 3. 메인 무한 루프
+    //
     while (1)
     {
-        uint8_t i2c_rx_buffer[2];
+        uint8_t ram_data_buffer[RAM_WORD_COUNT_TO_READ * 2];
+        
         uint16_t bridge_15bit_val = 0;
         float temp = 0.0f, humi = 0.0f;
         float sensing_percent = 0.0f;
-        
-        int zssc_ok = ZSSC4151_Read_Ram_In_Normal_Mode(ZSSC_RAM_ADDR_BRIDGE_RESULT, 1, i2c_rx_buffer);
-        bool sht_ok = SHT4x_Read_TH(&temp, &humi);
-
-        if (zssc_ok == 0) 
+                
+       // 2.1. Enter Command Mode
+        if (ZSSC4151_EnterCommandMode() != 0) 
         {
-            uint16_t bridge_result_16bit = ((uint16_t)i2c_rx_buffer[0] << 8) | i2c_rx_buffer[1];   
+            dbg_put_string(" -> Failed to enter Command Mode!\n\n");
+            delay_10ms(100); 
+        }
+
+        // 2.2. Copy NVM configuration to Shadow RAM
+        if (ZSSC4151_CopyNvmToShadow() != 0) 
+        {
+            dbg_put_string(" -> Failed to copy NVM to Shadow RAM!\n\n");
+            delay_10ms(100); 
+        }
+        delay_10ms(1); 
+
+        // 2.3. Start Measurement Cycle
+        if (ZSSC4151_StartMeasCycle() != 0) 
+        {
+            dbg_put_string(" -> Failed to send StartMeasCycle command!\n\n");
+            delay_10ms(100); 
+        }
+        delay_10ms(2); // Wait for measurements to complete.
+
+        // 2.4. Read Raw Data from RAM
+        dbg_put_string(" Reading RAM data...\n");
+        int result = ZSSC4151_ReadRam_Corrected(RAM_START_ADDRESS_TO_READ, RAM_WORD_COUNT_TO_READ, ram_data_buffer);
+        bool sht_ok = SHT4x_Read_TH(&temp, &humi);
+        
+        if (result == 0)
+        {
+            int16_t bridge_result_16bit = ((int16_t)ram_data_buffer[0] << 8) | ram_data_buffer[1];   
             
             bool is_error = (bridge_result_16bit & 0x8000); 
             bridge_15bit_val = bridge_result_16bit & 0x7FFF;
@@ -200,54 +306,51 @@ int main (void)
             if (scale_factor < 0.0f) scale_factor = 0.0f;
             if (scale_factor > 1.0f) scale_factor = 1.0f;
             sensing_percent = scale_factor * 4.0f;
-        } 
-        else  dbg_put_string("Error: Failed to read ZSSC4151 RAM.\r\n");
+            
+            if (!sht_ok) 
+            {
+                dbg_put_string("Error: Failed to get SHT4x Value.\r\n");
+                temp = 0.0f;
+                humi = 0.0f;
+            }       
         
-        if (!sht_ok) 
-        {
-            dbg_put_string("Error: Failed to get SHT4x Value.\r\n");
-            temp = 0.0f;
-            humi = 0.0f;
-        }       
-        
-        // --- 데이터를 각 자리 숫자로 분해하여 6개의 니블 생성 ---
-        uint8_t sense_digit1 = (uint8_t)sensing_percent;
-        uint8_t sense_digit2 = (uint8_t)((sensing_percent - sense_digit1) * 10);
-        uint8_t temp_int = (uint8_t)temp;
-        uint8_t temp_digit1 = (temp_int / 10) % 10;
-        uint8_t temp_digit2 = temp_int % 10;
-        uint8_t humi_int = (uint8_t)humi;
-        uint8_t humi_digit1 = (humi_int / 10) % 10;
-        uint8_t humi_digit2 = humi_int % 10;
-        
-        // --- SENT 데이터 프레임 생성 ---
-        uint8_t status_nibble = 0x1;
-        SENT1DATH = ((uint16_t)status_nibble << 12) | ((uint16_t)sense_digit1 << 8) | ((uint16_t)sense_digit2 << 4) | ((uint16_t)temp_digit1);
-        SENT1DATL = ((uint16_t)temp_digit2 << 12) | ((uint16_t)humi_digit1 << 8) | ((uint16_t)humi_digit2 << 4);
+            uint8_t sense_digit1 = (uint8_t)sensing_percent;
+            uint8_t sense_digit2 = (uint8_t)((sensing_percent - sense_digit1) * 10);
+            uint8_t temp_int = (uint8_t)temp;
+            uint8_t temp_digit1 = (temp_int / 10) % 10;
+            uint8_t temp_digit2 = temp_int % 10;
+            uint8_t humi_int = (uint8_t)humi;
+            uint8_t humi_digit1 = (humi_int / 10) % 10;
+            uint8_t humi_digit2 = humi_int % 10;
+            
+            // --- SENT 
+            uint8_t status_nibble = 0x1;
+            SENT1DATH = ((uint16_t)status_nibble << 12) | ((uint16_t)sense_digit1 << 8) | ((uint16_t)sense_digit2 << 4) | ((uint16_t)temp_digit1);
+            SENT1DATL = ((uint16_t)temp_digit2 << 12) | ((uint16_t)humi_digit1 << 8) | ((uint16_t)humi_digit2 << 4);
 
-        SENT1STATbits.SYNCTXEN = 1;
-        while(SENT1STATbits.SYNCTXEN == 1);
+            SENT1STATbits.SYNCTXEN = 1;
+            while(SENT1STATbits.SYNCTXEN == 1);
+
+            static uint16_t count = 0; 
+            dbg_put_hex_word (count++);
+            dbg_put_string (") Sense: ");
+            dbg_put_float(sensing_percent);
+            dbg_put_string(" % (15bit Raw: 0x");
+            dbg_put_hex_word(bridge_15bit_val);
+            dbg_put_string("), Temp: ");
+            dbg_put_float(temp);
+            dbg_put_string(" C, Humi: ");
+            dbg_put_float(humi);
+            dbg_put_string(" % -> SENT Frame: 0x");
+            dbg_put_hex_word(SENT1DATH);
+            dbg_put_hex_word(SENT1DATL);
+            dbg_put_string("\r\n");
         
-        // --- 디버그 메시지 출력 ---
-        static uint16_t count = 0; 
-        dbg_put_hex_word (count++);
-        dbg_put_string (") Sense: ");
-        dbg_put_float(sensing_percent);
-        dbg_put_string(" % (15bit Raw: 0x");
-        dbg_put_hex_word(bridge_15bit_val);
-        dbg_put_string("), Temp: ");
-        dbg_put_float(temp);
-        dbg_put_string(" C, Humi: ");
-        dbg_put_float(humi);
-        dbg_put_string(" % -> SENT Frame: 0x");
-        dbg_put_hex_word(SENT1DATH);
-        dbg_put_hex_word(SENT1DATL);
-        dbg_put_string("\r\n");
+            __asm__ volatile ("clrwdt");        
         
-        __asm__ volatile ("clrwdt");        
-        
-        delay_10ms(100);
-    }
+            delay_10ms(100);
+        }
+    }    
     
     return 0;
 }
@@ -281,4 +384,3 @@ void __attribute__ ((__interrupt__, __auto_psv__)) _SENT1Interrupt (void)
 {
     IFS11bits.SENT1IF = 0; // clear interrupt flag
 }
-

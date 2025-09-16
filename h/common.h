@@ -6,12 +6,16 @@
 
 // TEST Option
 #define TEST_CLK                                            0       // CLOCK Redirection
-#define NVRAM_N_UART                                 0      // 1 = NVRAM Test Start
+#define UART_ENABLE                                     1       // UART using
 
-// only generate SENT Pulse Waveform (SENT=O, UART=x))
-#define SENT_PULSE_ONLY                             0  // 0 : SENT=x, UART=O, 1 : SENT=O, UART=x
-
-#define AFTER_1_TIME_WRITING_NVRAM      1    // NVRAM writing 
+//
+// 1. NVRAM_WRITE_TEST = 1로 NVM에 Write 한 후 전원 Off 
+// 2. NVRAM_WRITE_TEST = 0, RAM_READ_TEST = 1 설정 후 TEST
+// 3. 만약, NVM_RESPONSE_TIME = 1 하면 NVM 적용이 바뀜
+//
+#define NVRAM_WRITE_TEST                          0
+#define RAM_READ_TEST                                1    //    
+#define NVM_RESPONSE_TIME                       1
 
 // CLOCK
 #define FCAN                                    40000000UL      // Fcyc = 1/2Fpll

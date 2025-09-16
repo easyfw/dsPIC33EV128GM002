@@ -490,7 +490,7 @@ int ZSSC4151_WriteNvmWord (uint8_t nvm_addr, uint16_t write_data)
 
   // ???? ???? ???? ?? t_NVM_prog ????? ??? ????? ?? ??????.
   // ?????????? t_NVM_prog = 10ms (max)
-  delay_10ms (1);
+  delay_10ms (2);
 
   return 0;
 }
@@ -755,4 +755,163 @@ int ZSSC4151_Read_Ram_In_Normal_Mode(uint8_t address, uint8_t word_count, uint8_
     if (!I2C1_Stop()) return -8;
 
     return 0; // 성공
+}
+
+//
+int ZSSC4151_ReadRam_Corrected(uint8_t address, uint8_t word_count, uint8_t* buffer)
+{
+    // --- 쓰기 트랜잭션: 읽을 위치 지정 ---
+    if (!I2C1_Start()) return -1;
+
+    // 2. 슬레이브 주소 전송 (쓰기 모드)
+    if (!I2C1_Write(ZSSC4151_WRITE_ADDR))
+    {
+        I2C1_Stop();
+        return -2;
+    }
+
+    // 3. 'RdOutMemBurst' 명령(0x2E) 전송
+    if (!I2C1_Write(CMD_RD_OUT_MEM_BURST))
+    {
+        I2C1_Stop();
+        return -3;
+    }
+
+    // 4. [수정됨] 데이터시트에 따라 16비트 인수를 생성하고 전송합니다.
+    // 상위 8비트: 시작 주소, 하위 8비트: 읽을 워드 수 - 1
+    int16_t argument = ((int16_t)address << 8) | (word_count - 1);
+
+    // 4-1. 인수 MSB 전송
+    if (!I2C1_Write((uint8_t)(argument >> 8)))
+    {
+        I2C1_Stop();
+        return -4;
+    }
+    // 4-2. 인수 LSB 전송
+    if (!I2C1_Write((uint8_t)(argument & 0xFF)))
+    {
+        I2C1_Stop();
+        return -5;
+    }
+
+    // --- 읽기 트랜잭션: 데이터 수신 ---
+    if (!I2C1_Restart()) return -6;
+
+    // 6. 슬레이브 주소 전송 (읽기 모드)
+    if (!I2C1_Write(ZSSC4151_READ_ADDR))
+    {
+        I2C1_Stop();
+        return -7;
+    }
+
+    // 7. [추가됨] 첫 바이트는 Command Echo(0x2E)이므로 읽고 버립니다.
+    (void)I2C1_Read(true);
+
+    // 8. 실제 데이터를 수신합니다.
+    int16_t bytesToRead = word_count * 2;
+    for (int16_t i = 0; i < bytesToRead; i++)
+    {
+        bool is_last_byte = (i == (bytesToRead - 1));
+        buffer[i] = I2C1_Read(!is_last_byte); // 마지막 바이트 전까지는 ACK, 마지막 바이트는 NACK
+    }
+
+    // 9. I2C Stop
+    if (!I2C1_Stop()) return -8;
+
+    return 0; // 성공
+}
+
+/**
+ * @brief ZSSC4151에게 전체 측정 사이클을 시작하라고 명령합니다. (StrtMeasCyc, 0x0B)
+ * @details Command Mode에서만 실행해야 합니다. 이 함수 실행 후에도 Command Mode는 유지됩니다.
+ * @return 성공 시 0, 실패 시 -1
+ */
+int ZSSC4151_StartMeasCycle(void)
+{
+    // 1. I2C 통신 시작
+    if (!I2C1_Start()) return -1;
+
+    // 2. 슬레이브 주소(쓰기) 전송
+    if (!I2C1_Write(ZSSC4151_WRITE_ADDR))
+    {
+        I2C1_Stop();
+        return -2;
+    }
+
+    // 3. StrtMeasCyc 커맨드(0x0B) 전송
+    if (!I2C1_Write(CMD_STRT_MEAS_CYC))    
+    {
+        I2C1_Stop();
+        return -3;
+    }
+
+    // 4. 데이터시트에 따르면 StrtMeasCyc는 16비트 인수를 받습니다.
+    // 일반적인 사용 사례에서는 이 인수를 0으로 설정합니다.
+    // Argument: strtMeasCycArg, 16 Bits
+    if (!I2C1_Write(0x00)) // Argument MSB
+    {
+        I2C1_Stop();
+        return -4;
+    }
+    if (!I2C1_Write(0x00)) // Argument LSB
+    {
+        I2C1_Stop();
+        return -5;
+    }
+
+    // 5. I2C 통신 종료
+    if (!I2C1_Stop()) return -6;
+
+    return 0;
+}
+
+/**
+ * @brief RAM에 있는 원시 데이터를 바탕으로 연산 사이클을 실행합니다. (RunCondCyc, 0x0E)
+ * @details 이 명령 후 RAM 0x41 등에 최종 결과값이 기록됩니다.
+ * @return 성공 시 0, 실패 시 -1
+ */
+int ZSSC4151_RunConditioningCycle(void)
+{
+    if (!I2C1_Start()) return -1;
+    if (!I2C1_Write(ZSSC4151_WRITE_ADDR)) { I2C1_Stop(); return -2; }
+    if (!I2C1_Write(CMD_RUN_COND_CYC)) { I2C1_Stop(); return -3; }
+    // RunCondCyc 또한 16비트 인수를 받으며, 보통 0으로 설정합니다.
+    if (!I2C1_Write(0x00)) { I2C1_Stop(); return -4; } // Argument MSB
+    if (!I2C1_Write(0x00)) { I2C1_Stop(); return -5; } // Argument LSB
+    if (!I2C1_Stop()) return -6;
+    return 0;
+}
+
+/**
+ * @brief ZSSC4151의 상태 레지스터(IC Status, Failure Status)를 읽어 출력합니다.
+ */
+void ZSSC4151_Check_Status_Registers(void)
+{
+    uint32_t status_val;
+
+    // IC Status 읽기 (0x60)
+    if (ZSSC4151_Read_Command_Response32(CMD_RD_IC_STATUS, &status_val) == 0)
+    {
+        dbg_put_string(" -> IC Status (0x60): 0x");
+        dbg_put_hex_word((uint16_t)(status_val >> 16));
+        dbg_put_hex_word((uint16_t)(status_val & 0xFFFF));
+        dbg_put_string("\r\n");
+    }
+    else
+    {
+        dbg_put_string(" -> Failed to read IC Status (0x60)\r\n");
+    }
+
+    // Failure Status 읽기 (0x62)
+    if (ZSSC4151_Read_Command_Response32(CMD_RD_FAILURE_STATUS, &status_val) == 0)
+    {
+        dbg_put_string(" -> Failure Status (0x62): 0x");
+        dbg_put_hex_word((uint16_t)(status_val >> 16));
+        dbg_put_hex_word((uint16_t)(status_val & 0xFFFF));
+        dbg_put_string("\r\n");
+    }
+    else
+    {
+        dbg_put_string(" -> Failed to read Failure Status (0x62)\r\n");
+    }
 }

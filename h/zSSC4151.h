@@ -23,8 +23,12 @@
 #define CMD_READ_OUTPUT_MEM     0x2C // ?? ???: Read Output Memory (??????)
 #define CMD_RD_OUT_MEM_BURST    0x2E // Read Output Memory in Burst Mode
 
-#define CMD_STRT_MEAS_TASK      0x09 // Start Measurement Task
+#define CMD_STRT_MEAS_TASK        0x09 // Start Measurement Task
 #define CMD_CP_NVM_TO_SHDW      0x18
+#define CMD_STRT_MEAS_CYC         0x0B    // 
+#define CMD_RUN_COND_CYC          0x0E    //
+#define CMD_RD_IC_STATUS             0x60    // 
+#define CMD_RD_FAILURE_STATUS   0x62    // 
 
 // --- ZSSC4151 RAM 주소 정의 ---
 #define ZSSC_RAM_ADDR_BRIDGE_RESULT 0x41
@@ -78,6 +82,10 @@ int ZSSC4151_StartMeaTask(uint8_t taskNum, uint8_t repeats, uint8_t avgFactor);
 int ZSSC4151_ReadRamBurst(uint8_t startAddr, uint8_t wordCount, uint8_t* readBuffer);
 int Get_ZSSC4151_BridgeRaw(int16_t *raw_value);
 int ZSSC4151_Read_Ram_In_Normal_Mode(uint8_t address, uint8_t word_count, uint8_t* buffer);
+int ZSSC4151_ReadRam_Corrected(uint8_t address, uint8_t word_count, uint8_t* buffer);
+int ZSSC4151_StartMeasCycle(void);
+int ZSSC4151_RunConditioningCycle(void);
+void ZSSC4151_Check_Status_Registers(void);
 
 /**
  * @brief 현재 센서의 상태를 반환하는 함수
