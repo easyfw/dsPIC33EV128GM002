@@ -172,13 +172,15 @@ int main(void)
     while(1)
     {
         uint8_t ram_data_buffer[RAM_WORD_COUNT_TO_READ * 2];
+        float temp = 0.0f, humi = 0.0f;
+        int16_t br_val;
 
         // 2.1. Enter Command Mode
         if (ZSSC4151_EnterCommandMode() != 0) 
         {
             dbg_put_string(" -> Failed to enter Command Mode!\n\n");
             delay_10ms(100); 
-            continue;
+            while(1);
         }
         dbg_put_string("1. Entered Command Mode.\n");
         
@@ -191,7 +193,7 @@ int main(void)
         {
             dbg_put_string(" -> Failed to copy NVM to Shadow RAM!\n\n");
             delay_10ms(100); 
-            continue;
+            while(1);            
         }
         delay_10ms(1); 
         dbg_put_string("3. Copied NVM to Shadow RAM.\n");
@@ -201,21 +203,10 @@ int main(void)
         {
             dbg_put_string(" -> Failed to send StartMeasCycle command!\n\n");
             delay_10ms(100); 
-            continue;
+            while(1);
         }
         dbg_put_string("4. StartMeasCycle command sent.\n");
         delay_10ms(2); // Wait for measurements to complete.
-        
-        //********************************************************
-        // 2.1. Enter Command Mode
-        if (ZSSC4151_EnterCommandMode() != 0) 
-        {
-            dbg_put_string(" -> Failed to enter Command Mode!\n\n");
-            delay_10ms(100); 
-            continue;
-        }
-        dbg_put_string("1. Entered Command Mode.\n");        
-        //********************************************************       
 
         // 2.5. [Diagnostics] Check Final Chip Status
         dbg_put_string("5. Checking FINAL chip status...\n");
@@ -224,6 +215,7 @@ int main(void)
         // 2.6. Read Raw Data from RAM
         dbg_put_string("6. Reading RAM data...\n");
         int result = ZSSC4151_ReadRam_Corrected(RAM_START_ADDRESS_TO_READ, RAM_WORD_COUNT_TO_READ, ram_data_buffer);
+        bool sht_ok = SHT4x_Read_TH(&temp, &humi);   
 
         if (result == 0)
         {
@@ -245,7 +237,51 @@ int main(void)
         else dbg_put_string(" -> Read Failed!\n");
 
         dbg_put_string("\r\n");
-        delay_10ms(200); // Wait 2 seconds before the next cycle
+        
+        if (!sht_ok) 
+        {
+            dbg_put_string("Error: Failed to get SHT4x Value.\r\n");
+            temp = 0.0f;
+            humi = 0.0f;
+        }      
+        
+        int16_t data_0x01 = ((int16_t)ram_data_buffer[2] << 8) | (uint8_t)ram_data_buffer[3];        
+        int16_t data_0x15 = ((int16_t)ram_data_buffer[42] << 8) | (uint8_t)ram_data_buffer[43];             
+        br_val = data_0x01 - data_0x15;        
+        
+        uint8_t sense_int = (uint8_t)br_val;
+        uint8_t sense_digit1 = (sense_int / 10) % 10;
+        uint8_t sense_digit2 = sense_int % 10;        
+        
+        uint8_t temp_int = (uint8_t)temp;
+        uint8_t temp_digit1 = (temp_int / 10) % 10;
+        uint8_t temp_digit2 = temp_int % 10;
+        uint8_t humi_int = (uint8_t)humi;
+        uint8_t humi_digit1 = (humi_int / 10) % 10;
+        uint8_t humi_digit2 = humi_int % 10;                
+        
+        // --- SENT 
+        uint8_t status_nibble = 0x1;
+        SENT1DATH = ((uint16_t)status_nibble << 12) | ((uint16_t)sense_digit1 << 8) | ((uint16_t)sense_digit2 << 4) | ((uint16_t)temp_digit1);        
+        SENT1DATL = ((uint16_t)temp_digit2 << 12) | ((uint16_t)humi_digit1 << 8) | ((uint16_t)humi_digit2 << 4);
+
+        SENT1STATbits.SYNCTXEN = 1;
+        while(SENT1STATbits.SYNCTXEN == 1);
+
+        static uint16_t count = 0; 
+        dbg_put_dec_word (++count);
+        dbg_put_string (") br_val: ");       
+        dbg_put_dec_word(br_val);
+        dbg_put_string(", Temp: ");
+        dbg_put_float(temp);
+        dbg_put_string(" C, Humi: ");
+        dbg_put_float(humi);
+        dbg_put_string(" % -> SENT Frame: 0x");
+        dbg_put_hex_word(SENT1DATH);
+        dbg_put_hex_word(SENT1DATL);
+        dbg_put_string("\r\n");                 
+        
+        delay_10ms(300); // Wait 2 seconds before the next cycle
     }
 #endif
     
