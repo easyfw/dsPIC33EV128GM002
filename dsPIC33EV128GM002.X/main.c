@@ -12,9 +12,9 @@
 #include "..\h\zSSC4151.h"
 #include "..\h\sHT4x.h"
 
-// --- ÀÐ°íÀÚ ÇÏ´Â RAM ¹üÀ§ Á¤ÀÇ ---
+// --- ï¿½Ð°ï¿½ï¿½ï¿½ ï¿½Ï´ï¿½ RAM ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ---
 #define RAM_START_ADDRESS_TO_READ 0x00
-#define RAM_WORD_COUNT_TO_READ    0x18+1 // 0ºÎÅÍ 20±îÁö´Â ÃÑ 21°³ ¿öµå
+#define RAM_WORD_COUNT_TO_READ    0x18+1 // 0ï¿½ï¿½ï¿½ï¿½ 20ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ 21ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 //
 int main(void)
@@ -171,6 +171,8 @@ int main(void)
     // 2. Main Test Loop
     while(1)
     {
+        float temp = 0.0f, humi = 0.0f;
+        int16_t br_val;        
         uint8_t ram_data_buffer[RAM_WORD_COUNT_TO_READ * 2];
         float temp = 0.0f, humi = 0.0f;
         int16_t br_val;
@@ -216,7 +218,7 @@ int main(void)
         dbg_put_string("6. Reading RAM data...\n");
         int result = ZSSC4151_ReadRam_Corrected(RAM_START_ADDRESS_TO_READ, RAM_WORD_COUNT_TO_READ, ram_data_buffer);
         bool sht_ok = SHT4x_Read_TH(&temp, &humi);   
-
+        
         if (result == 0)
         {
             dbg_put_string(" -> Read Success!\n");
@@ -235,7 +237,6 @@ int main(void)
             }
         }
         else dbg_put_string(" -> Read Failed!\n");
-
         dbg_put_string("\r\n");
         
         if (!sht_ok) 
@@ -409,8 +410,8 @@ void __attribute__ ((__interrupt__, no_auto_psv)) _T2Interrupt (void)
 void __attribute__ ((__interrupt__, no_auto_psv)) _T3Interrupt (void)
 {
     IFS0bits.T3IF = 0;
-    T3CONbits.TON = 0; // Å¸ÀÌ¸Ó Á¤Áö
-    t3_done = 1; // ¿Ï·á ÇÃ·¡±× set
+    T3CONbits.TON = 0; // Å¸ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½
+    t3_done = 1; // ï¿½Ï·ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½ set
 }
 
 /******************************************************************************
