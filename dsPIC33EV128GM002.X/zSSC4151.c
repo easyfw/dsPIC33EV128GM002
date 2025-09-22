@@ -758,7 +758,7 @@ int ZSSC4151_Read_Ram_In_Normal_Mode(uint8_t address, uint8_t word_count, uint8_
 }
 
 //
-int ZSSC4151_ReadRam_Corrected(uint8_t address, uint8_t word_count, volatile uint8_t* buffer)
+int ZSSC4151_ReadRam_Corrected(uint8_t address, uint8_t word_count, uint8_t* buffer)
 {
     // --- 쓰기 트랜잭션: 읽을 위치 지정 ---
     if (!I2C1_Start()) return -1;

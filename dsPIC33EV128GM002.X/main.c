@@ -168,15 +168,13 @@ int main(void)
     
     delay_10ms(10);
 
-   uint8_t ram_buffer[RAM_WORD_COUNT_TO_READ * 2];
-   uint8_t ram_buffer2[RAM_WORD_COUNT_TO_READ * 2];
+    static uint8_t ram_buffer[RAM_WORD_COUNT_TO_READ * 2];
+    float temp = 0.0f, humi = 0.0f;
+    int16_t br_val;   
      
     // 2. Main Test Loop
     while(1)
     {
-        float temp = 0.0f, humi = 0.0f;
-        int16_t br_val;        
-
         // 2.1. Enter Command Mode
         if (ZSSC4151_EnterCommandMode() != 0) 
         {

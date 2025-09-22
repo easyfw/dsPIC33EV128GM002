@@ -82,7 +82,7 @@ int ZSSC4151_StartMeaTask(uint8_t taskNum, uint8_t repeats, uint8_t avgFactor);
 int ZSSC4151_ReadRamBurst(uint8_t startAddr, uint8_t wordCount, uint8_t* readBuffer);
 int Get_ZSSC4151_BridgeRaw(int16_t *raw_value);
 int ZSSC4151_Read_Ram_In_Normal_Mode(uint8_t address, uint8_t word_count, uint8_t* buffer);
-int ZSSC4151_ReadRam_Corrected(uint8_t address, uint8_t word_count, volatile uint8_t* buffer);
+int ZSSC4151_ReadRam_Corrected(uint8_t address, uint8_t word_count, uint8_t* buffer);
 int ZSSC4151_StartMeasCycle(void);
 int ZSSC4151_RunConditioningCycle(void);
 void ZSSC4151_Check_Status_Registers(void);
