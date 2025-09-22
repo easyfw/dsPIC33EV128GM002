@@ -168,14 +168,14 @@ int main(void)
     
     delay_10ms(10);
 
+   uint8_t ram_buffer[RAM_WORD_COUNT_TO_READ * 2];
+   uint8_t ram_buffer2[RAM_WORD_COUNT_TO_READ * 2];
+     
     // 2. Main Test Loop
     while(1)
     {
         float temp = 0.0f, humi = 0.0f;
         int16_t br_val;        
-        uint8_t ram_data_buffer[RAM_WORD_COUNT_TO_READ * 2];
-        float temp = 0.0f, humi = 0.0f;
-        int16_t br_val;
 
         // 2.1. Enter Command Mode
         if (ZSSC4151_EnterCommandMode() != 0) 
@@ -216,7 +216,7 @@ int main(void)
 
         // 2.6. Read Raw Data from RAM
         dbg_put_string("6. Reading RAM data...\n");
-        int result = ZSSC4151_ReadRam_Corrected(RAM_START_ADDRESS_TO_READ, RAM_WORD_COUNT_TO_READ, ram_data_buffer);
+        int result = ZSSC4151_ReadRam_Corrected(RAM_START_ADDRESS_TO_READ, RAM_WORD_COUNT_TO_READ, ram_buffer);
         bool sht_ok = SHT4x_Read_TH(&temp, &humi);   
         
         if (result == 0)
@@ -227,7 +227,7 @@ int main(void)
             for (int i = 0; i < RAM_WORD_COUNT_TO_READ; i++)
             {
                 // Combine two bytes into a 16-bit word (assuming Big Endian from sensor)
-                int16_t word_data = ((int16_t)ram_data_buffer[i*2] << 8) | (uint8_t)ram_data_buffer[i*2 + 1];
+                int16_t word_data = ((int16_t)ram_buffer[i*2] << 8) | (uint8_t)ram_buffer[i*2 + 1];
                 
                 dbg_put_string("[0x");
                 dbg_put_hex_word(RAM_START_ADDRESS_TO_READ + i);
@@ -246,8 +246,8 @@ int main(void)
             humi = 0.0f;
         }      
         
-        int16_t data_0x01 = ((int16_t)ram_data_buffer[2] << 8) | (uint8_t)ram_data_buffer[3];        
-        int16_t data_0x15 = ((int16_t)ram_data_buffer[42] << 8) | (uint8_t)ram_data_buffer[43];             
+        int16_t data_0x01 = ((int16_t)ram_buffer[2] << 8) | (uint8_t)ram_buffer[3];        
+        int16_t data_0x15 = ((int16_t)ram_buffer[42] << 8) | (uint8_t)ram_buffer[43];             
         br_val = data_0x01 - data_0x15;        
         
         uint8_t sense_int = (uint8_t)br_val;
@@ -282,112 +282,9 @@ int main(void)
         dbg_put_hex_word(SENT1DATL);
         dbg_put_string("\r\n");                 
         
-        delay_10ms(300); // Wait 2 seconds before the next cycle
+        delay_10ms(200); // Wait 2 seconds before the next cycle
     }
 #endif
-    
-    //
-    while (1)
-    {
-        uint8_t ram_data_buffer[RAM_WORD_COUNT_TO_READ * 2];
-        
-        uint16_t bridge_15bit_val = 0;
-        float temp = 0.0f, humi = 0.0f;
-        float sensing_percent = 0.0f;
-                
-       // 2.1. Enter Command Mode
-        if (ZSSC4151_EnterCommandMode() != 0) 
-        {
-            dbg_put_string(" -> Failed to enter Command Mode!\n\n");
-            delay_10ms(100); 
-        }
-
-        // 2.2. Copy NVM configuration to Shadow RAM
-        if (ZSSC4151_CopyNvmToShadow() != 0) 
-        {
-            dbg_put_string(" -> Failed to copy NVM to Shadow RAM!\n\n");
-            delay_10ms(100); 
-        }
-        delay_10ms(1); 
-
-        // 2.3. Start Measurement Cycle
-        if (ZSSC4151_StartMeasCycle() != 0) 
-        {
-            dbg_put_string(" -> Failed to send StartMeasCycle command!\n\n");
-            delay_10ms(100); 
-        }
-        delay_10ms(2); // Wait for measurements to complete.
-
-        // 2.4. Read Raw Data from RAM
-        dbg_put_string(" Reading RAM data...\n");
-        int result = ZSSC4151_ReadRam_Corrected(RAM_START_ADDRESS_TO_READ, RAM_WORD_COUNT_TO_READ, ram_data_buffer);
-        bool sht_ok = SHT4x_Read_TH(&temp, &humi);
-        
-        if (result == 0)
-        {
-            int16_t bridge_result_16bit = ((int16_t)ram_data_buffer[0] << 8) | ram_data_buffer[1];   
-            
-            bool is_error = (bridge_result_16bit & 0x8000); 
-            bridge_15bit_val = bridge_result_16bit & 0x7FFF;
-
-            if (is_error) dbg_put_string("Warning: ZSSC4151 Diagnostic Error Flag is set!\r\n");
-            
-            int32_t val = bridge_15bit_val;
-            float scale_factor = 0.0f;
-            
-            if ((SENSOR_15BIT_MAX - SENSOR_15BIT_MIN) > 0) 
-            {
-                 scale_factor = (float)(val - SENSOR_15BIT_MIN) / (float)(SENSOR_15BIT_MAX - SENSOR_15BIT_MIN);
-            }           
-        
-            if (scale_factor < 0.0f) scale_factor = 0.0f;
-            if (scale_factor > 1.0f) scale_factor = 1.0f;
-            sensing_percent = scale_factor * 4.0f;
-            
-            if (!sht_ok) 
-            {
-                dbg_put_string("Error: Failed to get SHT4x Value.\r\n");
-                temp = 0.0f;
-                humi = 0.0f;
-            }       
-        
-            uint8_t sense_digit1 = (uint8_t)sensing_percent;
-            uint8_t sense_digit2 = (uint8_t)((sensing_percent - sense_digit1) * 10);
-            uint8_t temp_int = (uint8_t)temp;
-            uint8_t temp_digit1 = (temp_int / 10) % 10;
-            uint8_t temp_digit2 = temp_int % 10;
-            uint8_t humi_int = (uint8_t)humi;
-            uint8_t humi_digit1 = (humi_int / 10) % 10;
-            uint8_t humi_digit2 = humi_int % 10;
-            
-            // --- SENT 
-            uint8_t status_nibble = 0x1;
-            SENT1DATH = ((uint16_t)status_nibble << 12) | ((uint16_t)sense_digit1 << 8) | ((uint16_t)sense_digit2 << 4) | ((uint16_t)temp_digit1);
-            SENT1DATL = ((uint16_t)temp_digit2 << 12) | ((uint16_t)humi_digit1 << 8) | ((uint16_t)humi_digit2 << 4);
-
-            SENT1STATbits.SYNCTXEN = 1;
-            while(SENT1STATbits.SYNCTXEN == 1);
-
-            static uint16_t count = 0; 
-            dbg_put_hex_word (count++);
-            dbg_put_string (") Sense: ");
-            dbg_put_float(sensing_percent);
-            dbg_put_string(" % (15bit Raw: 0x");
-            dbg_put_hex_word(bridge_15bit_val);
-            dbg_put_string("), Temp: ");
-            dbg_put_float(temp);
-            dbg_put_string(" C, Humi: ");
-            dbg_put_float(humi);
-            dbg_put_string(" % -> SENT Frame: 0x");
-            dbg_put_hex_word(SENT1DATH);
-            dbg_put_hex_word(SENT1DATL);
-            dbg_put_string("\r\n");
-        
-            __asm__ volatile ("clrwdt");        
-        
-            delay_10ms(100);
-        }
-    }    
     
     return 0;
 }

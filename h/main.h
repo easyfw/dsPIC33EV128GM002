@@ -59,7 +59,6 @@ volatile uint16_t datal, datah;
 
 volatile uint8_t buffer[6];
 volatile float T, H;
-volatile uint32_t count = 1;
 
 uint16_t tickTime = 3;             // Tick time in us
 float peripheralClk = 40.0;      // in Mhz
